@@ -533,6 +533,7 @@ select.fi option{background:var(--bg2)}
             </div>
           </div>
           <button class="tb-btn" id="notifPermBtn" onclick="requestNotifPermission()" title="Enable Notifications" style="display:none"><i class="fas fa-bell-slash"></i> Notifications</button>
+          <button class="tb-btn" id="testNotifBtn" onclick="testNotification()" title="Test Notification" style="display:none"><i class="fas fa-vial"></i> Test Notif</button>
           <button class="tb-btn" id="refreshBtn" onclick="manualRefresh()"><i class="fas fa-sync-alt" id="refreshIcon"></i> Refresh</button>
           <a href="index.html" target="_blank" class="tb-btn"><i class="fas fa-external-link-alt"></i> View Site</a>
         </div>
@@ -3547,14 +3548,15 @@ const _NOTIF = (() => {
   }
 
   function handleInsert(payload){
+    console.log('[INSERT]', JSON.stringify(payload).slice(0,300));
     const rec_id = payload?.record?.rec_id;
     const col    = payload?.record?.collection;
     const data   = payload?.record?.data || {};
-    if(!rec_id||!col) return;
+    if(!rec_id||!col){ console.warn('[INSERT] missing rec_id or col', rec_id, col); return; }
     if(_seen.has(rec_id)) return;
     _seen.add(rec_id);
     const cfg = WATCH[col];
-    if(!cfg) return;
+    if(!cfg){ console.warn('[INSERT] no WATCH config for collection:', col); return; }
     notify(cfg, {id:rec_id, ...data});
     if(col==='orders')           loadOrders().then(()=>renderDashboard());
     if(col==='messages')         loadMsgs().then(()=>renderDashboard());
@@ -3581,9 +3583,10 @@ const _NOTIF = (() => {
     _ws.onmessage = (e)=>{
       try{
         const m = JSON.parse(e.data);
+        console.log('[WS]', m.event, JSON.stringify(m).slice(0,200));
         if((m.event==='postgres_changes'||m.event==='*') && m.payload?.data?.type==='INSERT') handleInsert(m.payload.data);
         if(m.event==='INSERT' && m.payload?.record) handleInsert(m.payload);
-      }catch(err){}
+      }catch(err){ console.warn('[WS ERR]', err); }
     };
     _ws.onerror = ()=>{};
     _ws.onclose = ()=>{
@@ -3599,14 +3602,14 @@ const _NOTIF = (() => {
     _started = true;
     seedIds();
     updateNotifBtn();
+    updateTestBtn();
     if('Notification' in window && Notification.permission==='default'){
       Notification.requestPermission().then(p=>{
         updateNotifBtn();
-        if(p==='granted'){ toast('s','🔔 Notifications enabled!'); registerPushSubscription(); }
+        if(p==='granted') toast('s','🔔 Notifications enabled!');
         else              toast('e','Notifications blocked — use the 🔔 button in the toolbar to enable');
       });
     }
-    if('Notification' in window && Notification.permission==='granted') registerPushSubscription();
     connect();
   }
 
@@ -3635,37 +3638,21 @@ function updateNotifBtn(){
   }
 }
 
-// ── Push subscription ─────────────────────────────────────────────────────
-const VAPID_PUBLIC_KEY = 'BGPxBcxjYxhZom-bAqF8lfm4T0IqzqNJDhb_sTEHnGmASac0GEUZ2WxBQokW3ZuClqpFwIHkdzb2goy_lLHIa0U';
-
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw     = atob(base64);
-  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+async function testNotification(){
+  if(Notification.permission!=='granted'){ toast('e','Grant notification permission first!'); return; }
+  try {
+    new Notification('🧪 Test Notification', {
+      body: 'If you see this, notifications are working!',
+      icon: '/icons/icon-192.png'
+    });
+    toast('s', '✓ Test notification sent — did it pop up?');
+  } catch(e) { toast('e', 'Error: ' + e.message); }
 }
 
-async function registerPushSubscription() {
-  try {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    const reg = await navigator.serviceWorker.ready;
-    let sub   = await reg.pushManager.getSubscription();
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      });
-    }
-    // Save to Supabase
-    const SB_URL = 'https://ktsmmobntabchkvbfhpl.supabase.co';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0c21tb2JudGFiY2hrdmJmaHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzcxNTUsImV4cCI6MjA4ODg1MzE1NX0.y3q1E2rjzEOa7_v08tO-TVuB0RivFznGZ5Q9k_PP4_s';
-    await fetch(SB_URL + '/rest/v1/push_subscriptions', {
-      method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify({ endpoint: sub.endpoint, subscription: sub.toJSON() })
-    });
-    console.log('[PUSH] Subscription saved ✓');
-  } catch(e) { console.warn('[PUSH] Subscribe failed:', e); }
+function updateTestBtn(){
+  const btn = document.getElementById('testNotifBtn');
+  if(!btn) return;
+  btn.style.display = (Notification.permission==='granted') ? '' : 'none';
 }
 
 async function requestNotifPermission(){
@@ -3676,9 +3663,9 @@ async function requestNotifPermission(){
   }
   const p = await Notification.requestPermission();
   updateNotifBtn();
+  updateTestBtn();
   if(p==='granted'){
     toast('s','🔔 Notifications enabled!');
-    await registerPushSubscription();
     setTimeout(()=>{
       new Notification('🔔 RMZSTORE Notifications', {
         body:'You will now receive alerts for new orders, messages, and requests.',
