@@ -3,7 +3,7 @@
 //  Handles: caching, offline fallback, background sync
 // ============================================================
 
-const CACHE_NAME    = 'rmzstore-admin-v7';
+const CACHE_NAME    = 'rmzstore-v8';
 const OFFLINE_PAGE  = '/admin.html';
 
 // Files to pre-cache on install (shell)
@@ -12,7 +12,6 @@ const PRECACHE_URLS = [
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  // External fonts & icons (cached on first load via runtime caching below)
 ];
 
 // ── Install: pre-cache the app shell ──────────────────────
@@ -37,37 +36,32 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── Fetch: network-first for same-origin only ──────────────
+// ── Fetch: same-origin only — never touch external CDNs ───
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-
-  // Only handle GET requests from the same origin.
-  // All external CDNs (fonts, FontAwesome, APIs, etc.) are passed
-  // straight through to the browser — no SW interception at all.
+  // Only intercept same-origin GET requests.
+  // ALL external URLs (fonts, FontAwesome, Supabase, APIs…)
+  // go straight to the network — the SW never sees them.
   if (event.request.method !== 'GET') return;
-  if (url.origin !== self.location.origin) return;
+  if (new URL(event.request.url).origin !== self.location.origin) return;
 
-  // Same-origin requests → network-first with offline fallback
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Cache fresh copy
         if (response && response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
         }
         return response;
       })
-      .catch(() => {
-        // Offline: serve from cache or fallback to admin shell
-        return caches.match(event.request).then(cached => {
-          return cached || caches.match(OFFLINE_PAGE);
-        });
-      })
+      .catch(() =>
+        caches.match(event.request).then(cached =>
+          cached || caches.match(OFFLINE_PAGE)
+        )
+      )
   );
 });
 
-// ── Push Notifications (optional, requires VAPID setup) ───
+// ── Push Notifications ────────────────────────────────────
 self.addEventListener('push', event => {
   if (!event.data) return;
   const data = event.data.json();
@@ -82,16 +76,14 @@ self.addEventListener('push', event => {
   );
 });
 
-// ── Notification click → open/focus the app ───────────────
+// ── Notification click ────────────────────────────────────
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       const target = event.notification.data.url;
       for (const client of list) {
-        if (client.url.includes('admin') && 'focus' in client) {
-          return client.focus();
-        }
+        if (client.url.includes('admin') && 'focus' in client) return client.focus();
       }
       return clients.openWindow(target);
     })
