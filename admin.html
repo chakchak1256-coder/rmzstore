@@ -1497,6 +1497,7 @@ function doLogin(){
 }
 function doLogout(){
   stopAutoRefresh();
+  _NOTIF.stop(); // ← clean up realtime connection on logout
   localStorage.removeItem('rmz_admin_saved');
   document.getElementById('adminApp').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
@@ -1557,6 +1558,7 @@ async function initAdmin(){
   renderDashboard();
   updateLastRefreshLabel();
   startAutoRefresh();
+  _NOTIF.start(); // ← start realtime notifications after data is seeded
 }
 
 // Supabase is always ready — no write access check needed
@@ -4055,6 +4057,194 @@ window.addEventListener('appinstalled', () => {
   console.log('[PWA] App installed successfully');
   dismissInstallToast();
 });
+
+// ============================================================
+//  RMZSTORE — REALTIME NOTIFICATIONS
+//  Uses Supabase Realtime WebSocket (Phoenix protocol)
+//  Works: foreground tab, background PWA, installed PWA
+// ============================================================
+const _NOTIF = (() => {
+  const SB_URL   = 'https://ktsmmobntabchkvbfhpl.supabase.co';
+  const SB_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0c21tb2JudGFiY2hrdmJmaHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzcxNTUsImV4cCI6MjA4ODg1MzE1NX0.y3q1E2rjzEOa7_v08tO-TVuB0RivFznGZ5Q9k_PP4_s';
+  const WS_URL   = SB_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
+
+  // Collections to watch and their notification config
+  const WATCH = {
+    orders:          { icon: '🛍️', title: 'New Order!',           body: r => `${r.name || 'Customer'} — ${r.wilaya || ''} · ${r.total ? new Intl.NumberFormat('fr-DZ').format(r.total)+' DA' : ''}`, section: 'orders'   },
+    messages:        { icon: '💬', title: 'New Message!',          body: r => `${r.name || 'Unknown'}: ${(r.message || '').slice(0, 80)}`,                                                                section: 'messages'  },
+    exchangeRequests:{ icon: '🔄', title: 'New Exchange Request!', body: r => `${r.name || 'Customer'} wants to ${r.type || 'exchange'} — ${r.model || ''}`,                                             section: 'exchange'  },
+    returnRequests:  { icon: '↩️', title: 'New Return Request!',   body: r => `${r.name || 'Customer'} — ${r.model || r.orderId || ''}`,                                                                 section: 'returns'   },
+  };
+
+  // Track seen IDs to avoid duplicate notifications
+  let _seenIds = new Set();
+  let _ws      = null;
+  let _hbTimer = null;
+  let _retryTimer = null;
+  let _retryCount = 0;
+  let _started = false;
+  let _ref     = 1;
+
+  // ── Seed known IDs from current data so we don't fire on first load ──
+  function seedIds() {
+    orders.forEach(o => _seenIds.add(o.id));
+    msgs.forEach(m => _seenIds.add(m.id));
+    exchs.forEach(e => _seenIds.add(e.id));
+    returns.forEach(r => _seenIds.add(r.id));
+  }
+
+  // ── Show a native notification ──
+  function notify(cfg, record) {
+    const title = cfg.icon + ' ' + cfg.title;
+    const body  = cfg.body(record);
+
+    // In-app toast (always shown, even if tab is focused)
+    toast('s', `${cfg.icon} <strong>${cfg.title}</strong> ${body.slice(0, 60)}`);
+
+    // Native OS notification (works backgrounded / PWA installed)
+    if (Notification.permission === 'granted') {
+      const n = new Notification(title, {
+        body,
+        icon:  '/icons/icon-192.png',
+        badge: '/icons/icon-96.png',
+        tag:   record.id,            // deduplication: same tag = replace, not stack
+        renotify: true,
+        vibrate: [200, 100, 200],
+        data:  { section: cfg.section }
+      });
+      // Clicking the notification opens/focuses the app and jumps to the right section
+      n.onclick = () => {
+        window.focus();
+        showSec(cfg.section);
+        n.close();
+      };
+    }
+  }
+
+  // ── Handle an INSERT event from Supabase Realtime ──
+  function handleInsert(payload) {
+    const rec_id   = payload?.record?.rec_id;
+    const col      = payload?.record?.collection;
+    const data     = payload?.record?.data || {};
+
+    if (!rec_id || !col) return;
+    if (_seenIds.has(rec_id)) return;   // already known
+    _seenIds.add(rec_id);
+
+    const cfg = WATCH[col];
+    if (!cfg) return;
+
+    // Merge rec_id as id so body builder can use it
+    notify(cfg, { id: rec_id, ...data });
+
+    // Also refresh the relevant data array & re-render dashboard
+    if (col === 'orders')           { loadOrders().then(() => renderDashboard()); }
+    if (col === 'messages')         { loadMsgs().then(() => renderDashboard()); }
+    if (col === 'exchangeRequests') { loadExch().then(() => renderDashboard()); }
+    if (col === 'returnRequests')   { loadReturns().then(() => renderDashboard()); }
+  }
+
+  // ── Build and send a Phoenix channel message ──
+  function send(obj) {
+    if (_ws && _ws.readyState === WebSocket.OPEN) {
+      _ws.send(JSON.stringify({ ...obj, ref: String(_ref++) }));
+    }
+  }
+
+  // ── Subscribe to the store table ──
+  function subscribe() {
+    send({
+      topic:   'realtime:public:store',
+      event:   'phx_join',
+      payload: {
+        config: {
+          broadcast:       { self: false },
+          presence:        { key: '' },
+          postgres_changes: [{ event: 'INSERT', schema: 'public', table: 'store' }]
+        }
+      }
+    });
+  }
+
+  // ── Start heartbeat (every 25 s, required by Phoenix) ──
+  function startHeartbeat() {
+    clearInterval(_hbTimer);
+    _hbTimer = setInterval(() => {
+      send({ topic: 'phoenix', event: 'heartbeat', payload: {} });
+    }, 25000);
+  }
+
+  // ── Connect (or reconnect) ──
+  function connect() {
+    if (_ws) { try { _ws.close(); } catch(e){} }
+
+    _ws = new WebSocket(WS_URL);
+
+    _ws.onopen = () => {
+      _retryCount = 0;
+      subscribe();
+      startHeartbeat();
+      console.log('[NOTIF] Realtime connected');
+    };
+
+    _ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        // Phoenix: postgres_changes event arrives as "postgres_changes" inside payload
+        if (msg.event === 'postgres_changes' || msg.event === '*') {
+          const changes = msg.payload?.data || msg.payload;
+          if (changes?.type === 'INSERT') handleInsert(changes);
+        }
+        // Supabase wraps it differently in some versions:
+        if (msg.event === 'phx_reply' && msg.payload?.response?.postgres_changes) {
+          // Subscription confirmed — nothing to do
+        }
+        // Newer Supabase realtime sends "INSERT" directly as event
+        if (msg.event === 'INSERT' && msg.payload?.record) {
+          handleInsert(msg.payload);
+        }
+      } catch(err) { /* ignore malformed frames */ }
+    };
+
+    _ws.onerror = (e) => console.warn('[NOTIF] WebSocket error', e);
+
+    _ws.onclose = () => {
+      clearInterval(_hbTimer);
+      // Exponential backoff reconnect (max 30 s)
+      const delay = Math.min(1000 * Math.pow(2, _retryCount++), 30000);
+      console.log(`[NOTIF] Disconnected. Reconnecting in ${delay}ms…`);
+      _retryTimer = setTimeout(connect, delay);
+    };
+  }
+
+  // ── Public: call once after login + data loaded ──
+  function start() {
+    if (_started) return;
+    _started = true;
+    seedIds();
+
+    // Ask for notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(p => {
+        if (p === 'granted') toast('s', '🔔 Notifications enabled!');
+        else                 toast('e', 'Notifications blocked — enable in browser settings');
+      });
+    }
+
+    connect();
+  }
+
+  // ── Public: call on logout to clean up ──
+  function stop() {
+    _started = false;
+    clearInterval(_hbTimer);
+    clearTimeout(_retryTimer);
+    _seenIds.clear();
+    if (_ws) { try { _ws.close(); } catch(e){} _ws = null; }
+  }
+
+  return { start, stop };
+})();
 
 // ============================================
 // DANGER ZONE — DELETE DATA
