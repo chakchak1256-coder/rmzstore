@@ -2391,7 +2391,7 @@ window._renderCategories = function(cats) {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const idx = parseInt(entry.target.dataset.catIndex);
-          const delay = (idx * 0.12) + 's';
+          const delay = (Math.min(idx, 5) * 0.08) + 's';
           entry.target.style.animationDelay = delay;
           entry.target.classList.add(idx % 2 === 0 ? 'cat-slide-right' : 'cat-slide-left');
           observer.unobserve(entry.target);
@@ -2863,6 +2863,12 @@ function openCheckout() {
 
 function closeCheckout() {
   document.getElementById('checkoutModal').classList.remove('open');
+  // Reset submit button in case it was disabled mid-submit
+  const btn = document.querySelector('#checkoutModal .cart-checkout-btn');
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check-circle" style="margin-right:8px"></i> Place Order';
+  }
 }
 
 function updateDeliveryOptions() {
@@ -2944,6 +2950,10 @@ function updateOrderSummary() {
 }
 
 async function placeOrder() {
+  // Guard: prevent double-submit
+  const btn = document.querySelector('#checkoutModal .cart-checkout-btn');
+  if (btn && btn.disabled) return;
+
   const name = document.getElementById('co-name').value.trim();
   const phone = document.getElementById('co-phone').value.trim();
   const wilaya = document.getElementById('co-wilaya').value;
@@ -3000,6 +3010,12 @@ async function placeOrder() {
     return;
   }
 
+  // ── Disable button immediately to prevent spam clicks ──
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:8px"></i> Placing Order...';
+  }
+
   const deliveryPrice = parseInt(opt?.dataset?.[selectedDeliveryType] || 0);
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const orderData = {
@@ -3017,6 +3033,12 @@ async function placeOrder() {
   try {
     if (window._submitOrder) {
       const id = await window._submitOrder(orderData);
+      // ── Clear the form fields ──
+      ['co-name','co-phone','co-email','co-address','co-notes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('co-wilaya').selectedIndex = 0;
       cart = [];
       saveCart();
       renderCart();
@@ -3025,6 +3047,11 @@ async function placeOrder() {
     }
   } catch(e) {
     showToast('error', 'Failed to place order. Please try again.');
+    // ── Re-enable button on failure so user can retry ──
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check-circle" style="margin-right:8px"></i> Place Order';
+    }
   }
 }
 

@@ -36,7 +36,7 @@
 <!-- ═══════════════════════════════════════════
      SEO / OG (optional but good practice)
 ════════════════════════════════════════════ -->
-<meta name="description" content="RMZSTORE Admin Dashboard — Manage orders, products, dispatch."/>
+<meta name="description" content="RMZSTORE Admin Dashboard — Manage orders, products, and more."/>
 <meta name="robots" content="noindex,nofollow"/>
 
 <!-- Favicon fallback -->
@@ -501,7 +501,7 @@ select.fi option{background:var(--bg2)}
         <div class="sb-section">
           <div class="sb-section-title">Sales</div>
           <div class="nav-item" onclick="showSec('orders')"><i class="fas fa-shopping-bag"></i> Orders <span class="n-badge" id="ordersN" style="display:none">0</span></div>
-          <div class="nav-item" onclick="showSec('dispatch')"><i class="fas fa-rocket"></i> Dispatch <span class="n-badge" id="dispatchN" style="display:none">0</span></div>
+
           <div class="nav-item" onclick="showSec('returns')"><i class="fas fa-rotate-left"></i> Return Requests <span class="n-badge" id="returnsN" style="display:none">0</span></div>
           <div class="nav-item" onclick="showSec('exchange')"><i class="fas fa-exchange-alt"></i> Exchange Requests</div>
           <div class="nav-item" onclick="showSec('messages')"><i class="fas fa-envelope"></i> Messages <span class="n-badge" id="msgsN" style="display:none">0</span></div>
@@ -532,6 +532,7 @@ select.fi option{background:var(--bg2)}
               <div id="refreshCountdownFill" style="height:100%;background:var(--accent);border-radius:2px;width:100%;transition:width 1s linear"></div>
             </div>
           </div>
+          <button class="tb-btn" id="notifPermBtn" onclick="requestNotifPermission()" title="Enable Notifications" style="display:none"><i class="fas fa-bell-slash"></i> Notifications</button>
           <button class="tb-btn" id="refreshBtn" onclick="manualRefresh()"><i class="fas fa-sync-alt" id="refreshIcon"></i> Refresh</button>
           <a href="index.html" target="_blank" class="tb-btn"><i class="fas fa-external-link-alt"></i> View Site</a>
         </div>
@@ -694,66 +695,6 @@ select.fi option{background:var(--bg2)}
             </div>
             <!-- Mobile card view (shown on phones via CSS) -->
             <div class="order-cards" id="orderCards"></div>
-          </div>
-        </div>
-
-        <!-- ========== DISPATCH ========== -->
-        <div class="sec" id="sec-dispatch">
-          <!-- API Config Bar -->
-          <div id="dispatch-api-bar" style="background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;margin-bottom:14px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-              <div style="font-family:'Exo 2',sans-serif;font-weight:800;font-size:13px;letter-spacing:1px">🚚 Delivery Service</div>
-              <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap">
-                <button class="btn btn-sm" id="svc-zr-btn" onclick="selectService('zr')" style="background:rgba(214,40,40,0.1);border:1px solid rgba(214,40,40,0.25);color:#D62828;font-family:'Exo 2',sans-serif;font-weight:700">ZR Express</button>
-                <button class="btn btn-sm" id="svc-yal-btn" onclick="selectService('yalidine')" style="background:rgba(212,175,55,0.1);border:1px solid var(--border);color:var(--accent);font-family:'Exo 2',sans-serif;font-weight:700">Yalidine</button>
-                <button class="btn btn-ghost btn-sm" onclick="toggleApiConfig()"><i class="fas fa-key"></i> API Keys</button>
-              </div>
-            </div>
-            <!-- API key inputs (collapsed by default) -->
-            <div id="api-config-fields" style="display:none;border-top:1px solid var(--border2);padding-top:12px;display:none">
-              <div id="zr-config" style="display:none">
-                <div style="font-size:11px;color:var(--text2);font-family:'Exo 2',sans-serif;font-weight:700;letter-spacing:2px;margin-bottom:8px">ZR EXPRESS API</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
-                  <div><label class="flbl">API Token</label><input type="password" class="fi" id="zr-token" placeholder="Your ZR Express token" style="font-size:12px"/></div>
-                  <div><label class="flbl">Store ID (optional)</label><input type="text" class="fi" id="zr-store-id" placeholder="Store ID" style="font-size:12px"/></div>
-                  <button class="btn btn-primary btn-sm" onclick="saveApiKeys('zr')"><i class="fas fa-save"></i> Save</button>
-                </div>
-                <div style="font-size:11px;color:var(--text3);margin-top:6px">Get your token at <a href="https://www.zr-express.dz" target="_blank" style="color:var(--accent)">zr-express.dz</a> → Dashboard → API</div>
-              </div>
-              <div id="yal-config" style="display:none">
-                <div style="font-size:11px;color:var(--text2);font-family:'Exo 2',sans-serif;font-weight:700;letter-spacing:2px;margin-bottom:8px">YALIDINE API</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
-                  <div><label class="flbl">API ID</label><input type="text" class="fi" id="yal-api-id" placeholder="API-ID" style="font-size:12px"/></div>
-                  <div><label class="flbl">API Token</label><input type="password" class="fi" id="yal-api-token" placeholder="API-TOKEN" style="font-size:12px"/></div>
-                  <button class="btn btn-primary btn-sm" onclick="saveApiKeys('yalidine')"><i class="fas fa-save"></i> Save</button>
-                </div>
-                <div style="font-size:11px;color:var(--text3);margin-top:6px">Get your keys at <a href="https://yalidine.app" target="_blank" style="color:var(--accent)">yalidine.app</a> → Settings → API</div>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <div class="card-title">Ready to Dispatch</div>
-                <div style="font-size:12px;color:var(--text2);margin-top:3px">Orders ready to send to your delivery partner</div>
-              </div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                <select class="fi" id="dispatchStatusF" style="width:160px;padding:8px 12px;font-size:12px" onchange="renderDispatch()">
-                  <option value="contacted">Contacted</option>
-                  <option value="new">New</option>
-                  <option value="delayed">Delayed</option>
-                  <option value="">All Orders</option>
-                </select>
-                <div class="srch"><i class="fas fa-search"></i><input type="text" id="dispatchSearch" placeholder="Search..." oninput="renderDispatch()"/></div>
-                <button class="btn btn-primary btn-sm" id="dispatch-all-btn" onclick="dispatchSelected()" style="display:none"><i class="fas fa-rocket"></i> Dispatch Selected (<span id="dispatch-sel-count">0</span>)</button>
-                <button class="btn btn-ghost btn-sm" id="print-all-btn" onclick="printSelectedLabels()" style="display:none"><i class="fas fa-print"></i> Print Selected</button>
-              </div>
-            </div>
-            <div id="dispatch-service-banner" style="background:rgba(212,175,55,0.07);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--text2);display:flex;align-items:center;gap:10px">
-              <i class="fas fa-info-circle" style="color:var(--accent)"></i>
-              <span id="dispatch-service-label">Select a delivery service above (ZR Express or Yalidine)</span>
-            </div>
-            <div id="dispatch-list"><div class="loading"><div class="spinner"></div></div></div>
           </div>
         </div>
 
@@ -1497,7 +1438,7 @@ function doLogin(){
 }
 function doLogout(){
   stopAutoRefresh();
-  _NOTIF.stop(); // ← clean up realtime connection on logout
+  _NOTIF.stop();
   localStorage.removeItem('rmz_admin_saved');
   document.getElementById('adminApp').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
@@ -1524,7 +1465,7 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('ope
 // ============================================
 // SECTION NAVIGATION
 // ============================================
-const TITLES={dashboard:'Dashboard',products:'Products',categories:'Categories',offers:'Best Offers',oos:'Out of Stock',orders:'Orders',dispatch:'Dispatch',returns:'Return Requests',exchange:'Exchange Requests',messages:'Messages',delivery:'Delivery Tariffs',contact:'Contact Settings',warranty:'Warranty Page',dangerzone:'Delete Data'};
+const TITLES={dashboard:'Dashboard',products:'Products',categories:'Categories',offers:'Best Offers',oos:'Out of Stock',orders:'Orders',returns:'Return Requests',exchange:'Exchange Requests',messages:'Messages',delivery:'Delivery Tariffs',contact:'Contact Settings',warranty:'Warranty Page',dangerzone:'Delete Data'};
 function showSec(name){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -1540,7 +1481,6 @@ function showSec(name){
   if(name==='offers')renderOffers();
   if(name==='oos')renderOos();
   if(name==='orders')renderOrders();
-  if(name==='dispatch')initDispatch();
   if(name==='returns')renderReturns();
   if(name==='exchange')renderExch();
   if(name==='messages')renderMsgs();
@@ -1558,7 +1498,7 @@ async function initAdmin(){
   renderDashboard();
   updateLastRefreshLabel();
   startAutoRefresh();
-  _NOTIF.start(); // ← start realtime notifications after data is seeded
+  _NOTIF.start();
 }
 
 // Supabase is always ready — no write access check needed
@@ -1647,7 +1587,6 @@ async function refreshData(silent=false){
       const sec = active.id.replace('sec-','');
       if(sec==='products')  renderProds();
       if(sec==='orders')    renderOrders();
-      if(sec==='dispatch')  renderDispatch();
       if(sec==='messages')  renderMsgs();
       if(sec==='offers')    renderOffers();
       if(sec==='oos')       renderOos();
@@ -3486,497 +3425,7 @@ function validateOrderData(o) {
 // Note: validation tags are applied inside renderOrders() below
 // Google Sheet UI is initialized inside renderOrders() on each render
 
-// ============================================
-// DISPATCH — ZR Express & Yalidine
-// ============================================
-let _dispatchService = localStorage.getItem('rmz_dispatch_svc') || '';
-let _selectedDispatchIds = new Set();
 
-function initDispatch(){
-  _dispatchService = localStorage.getItem('rmz_dispatch_svc') || '';
-  // Restore saved API keys into inputs
-  const zrToken   = localStorage.getItem('rmz_zr_token')    || '';
-  const zrStore   = localStorage.getItem('rmz_zr_store')    || '';
-  const yalId     = localStorage.getItem('rmz_yal_id')      || '';
-  const yalToken  = localStorage.getItem('rmz_yal_token')   || '';
-  const inp = (id,v)=>{ const el=document.getElementById(id); if(el) el.value=v; };
-  inp('zr-token', zrToken); inp('zr-store-id', zrStore);
-  inp('yal-api-id', yalId); inp('yal-api-token', yalToken);
-  if(_dispatchService) selectService(_dispatchService, true);
-  renderDispatch();
-}
-
-function selectService(svc, silent=false){
-  _dispatchService = svc;
-  localStorage.setItem('rmz_dispatch_svc', svc);
-  // Button styles
-  const zrBtn  = document.getElementById('svc-zr-btn');
-  const yalBtn = document.getElementById('svc-yal-btn');
-  if(zrBtn)  zrBtn.style.opacity  = svc==='zr'       ? '1' : '0.45';
-  if(yalBtn) yalBtn.style.opacity = svc==='yalidine' ? '1' : '0.45';
-  // Show correct config fields
-  const zrCfg  = document.getElementById('zr-config');
-  const yalCfg = document.getElementById('yal-config');
-  if(zrCfg)  zrCfg.style.display  = svc==='zr'       ? 'block' : 'none';
-  if(yalCfg) yalCfg.style.display = svc==='yalidine' ? 'block' : 'none';
-  // Banner label
-  const lbl = document.getElementById('dispatch-service-label');
-  if(lbl) lbl.innerHTML = svc==='zr'
-    ? '<strong style="color:#D62828">ZR Express</strong> — orders will be submitted via ZR Express API'
-    : '<strong style="color:var(--accent)">Yalidine</strong> — orders will be submitted via Yalidine API';
-  if(!silent) toast('s', (svc==='zr'?'ZR Express':'Yalidine')+' selected');
-}
-
-function toggleApiConfig(){
-  const el = document.getElementById('api-config-fields');
-  if(!el) return;
-  const open = el.style.display === 'block';
-  el.style.display = open ? 'none' : 'block';
-  // Show correct sub-config
-  if(!open && _dispatchService){
-    document.getElementById('zr-config').style.display  = _dispatchService==='zr'       ? 'block' : 'none';
-    document.getElementById('yal-config').style.display = _dispatchService==='yalidine' ? 'block' : 'none';
-  }
-}
-
-function saveApiKeys(svc){
-  if(svc==='zr'){
-    const t = document.getElementById('zr-token')?.value.trim()||'';
-    const s = document.getElementById('zr-store-id')?.value.trim()||'';
-    if(!t){ toast('e','Enter your ZR Express API token'); return; }
-    localStorage.setItem('rmz_zr_token', t);
-    localStorage.setItem('rmz_zr_store', s);
-    toast('s','✓ ZR Express API keys saved');
-  } else {
-    const i = document.getElementById('yal-api-id')?.value.trim()||'';
-    const t = document.getElementById('yal-api-token')?.value.trim()||'';
-    if(!i||!t){ toast('e','Enter both Yalidine API ID and Token'); return; }
-    localStorage.setItem('rmz_yal_id', i);
-    localStorage.setItem('rmz_yal_token', t);
-    toast('s','✓ Yalidine API keys saved');
-  }
-  toggleApiConfig();
-}
-
-function renderDispatch(){
-  const statusF  = document.getElementById('dispatchStatusF')?.value ?? 'contacted';
-  const search   = (document.getElementById('dispatchSearch')?.value||'').toLowerCase();
-  const filtered = orders.filter(o =>
-    (!statusF || o.status === statusF) &&
-    (!search  || o.name?.toLowerCase().includes(search) || o.phone?.includes(search) || o.wilaya?.toLowerCase().includes(search))
-  );
-
-  const list = document.getElementById('dispatch-list');
-  if(!list) return;
-
-  // Update dispatch badge in sidebar
-  const contactedCount = orders.filter(o=>o.status==='contacted').length;
-  const dn = document.getElementById('dispatchN');
-  if(dn){ dn.textContent=contactedCount; dn.style.display=contactedCount?'inline-flex':'none'; }
-
-  if(!filtered.length){
-    list.innerHTML='<div class="empty-s"><i class="fas fa-rocket"></i><p>No orders match this filter</p></div>';
-    _selectedDispatchIds.clear();
-    updateDispatchSelCount();
-    return;
-  }
-
-  list.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border2)">
-      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:var(--text2)">
-        <input type="checkbox" id="dispatch-select-all" onchange="toggleSelectAllDispatch(this.checked)" style="width:15px;height:15px;accent-color:var(--accent)"/>
-        Select all (${filtered.length})
-      </label>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-    ${filtered.map(o=>{
-      const ts = o.createdAt?.seconds ? o.createdAt.seconds*1000 : (o.createdAt ? new Date(o.createdAt).getTime() : null);
-      const date = ts ? new Date(ts).toLocaleDateString('fr-DZ') : '—';
-      const product = (o.items||[]).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join(', ')||'—';
-      const checked = _selectedDispatchIds.has(o.id) ? 'checked' : '';
-      return `<div class="dispatch-card" id="dc-${o.id}" style="background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:14px;display:flex;gap:12px;align-items:flex-start;transition:border-color .2s" onmouseenter="this.style.borderColor='var(--border)'" onmouseleave="this.style.borderColor='var(--border2)'">
-        <input type="checkbox" data-oid="${o.id}" class="dispatch-cb" ${checked} onchange="toggleDispatchSelect('${o.id}',this.checked)" style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;margin-top:2px"/>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <span style="font-family:'Exo 2',sans-serif;font-weight:900;font-size:14px">#${o.id.slice(-6).toUpperCase()}</span>
-            ${statusBadge(o.status)}
-            <span style="font-size:11px;color:var(--text3);margin-left:auto">${date}</span>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-bottom:10px">
-            <div style="font-size:12px"><span style="color:var(--text3)">Customer</span><br/><strong>${o.name||'—'}</strong></div>
-            <div style="font-size:12px"><span style="color:var(--text3)">Phone</span><br/><strong>${o.phone||'—'}</strong></div>
-            <div style="font-size:12px"><span style="color:var(--text3)">Wilaya</span><br/><strong>${o.wilaya||'—'}</strong></div>
-            <div style="font-size:12px"><span style="color:var(--text3)">Delivery</span><br/><strong>${o.deliveryType==='home'?'🏠 Home':'🏢 Office'}</strong></div>
-            <div style="font-size:12px"><span style="color:var(--text3)">Total</span><br/><strong class="price-txt">${fmtPrice(o.total||0)}</strong></div>
-          </div>
-          <div style="font-size:12px;color:var(--text2);margin-bottom:10px;background:var(--bg3);border-radius:8px;padding:7px 10px">${product}</div>
-          <div style="display:flex;gap:7px;flex-wrap:wrap">
-            <button class="btn btn-primary btn-sm" onclick="dispatchSingleOrder('${o.id}')"><i class="fas fa-rocket"></i> Send to ${_dispatchService==='zr'?'ZR Express':'Yalidine'}</button>
-            <button class="btn btn-ghost btn-sm" onclick="printShippingLabel('${o.id}')"><i class="fas fa-print"></i> Print Label</button>
-            <button class="btn btn-ghost btn-sm" onclick="viewOrder('${o.id}')"><i class="fas fa-eye"></i> View</button>
-            <button class="btn btn-warning btn-sm" onclick="updateOrderStatus('${o.id}','delivered')"><i class="fas fa-check"></i> Mark Delivered</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('')}
-    </div>`;
-  updateDispatchSelCount();
-}
-
-function toggleDispatchSelect(id, checked){
-  if(checked) _selectedDispatchIds.add(id);
-  else        _selectedDispatchIds.delete(id);
-  updateDispatchSelCount();
-}
-
-function toggleSelectAllDispatch(checked){
-  document.querySelectorAll('.dispatch-cb').forEach(cb=>{
-    cb.checked = checked;
-    const oid = cb.dataset.oid;
-    if(checked) _selectedDispatchIds.add(oid);
-    else        _selectedDispatchIds.delete(oid);
-  });
-  updateDispatchSelCount();
-}
-
-function updateDispatchSelCount(){
-  const n = _selectedDispatchIds.size;
-  const btn = document.getElementById('dispatch-all-btn');
-  const pBtn = document.getElementById('print-all-btn');
-  if(btn)  btn.style.display  = n>0 ? 'inline-flex' : 'none';
-  if(pBtn) pBtn.style.display = n>0 ? 'inline-flex' : 'none';
-  const cnt = document.getElementById('dispatch-sel-count');
-  if(cnt) cnt.textContent = n;
-}
-
-// ============================================
-// PRINT SHIPPING LABELS
-// ============================================
-function printShippingLabel(orderId){
-  const o = orders.find(x=>x.id===orderId);
-  if(!o){ toast('e','Order not found'); return; }
-  _openPrintWindow([o]);
-}
-
-function printSelectedLabels(){
-  const selected = orders.filter(o=>_selectedDispatchIds.has(o.id));
-  if(!selected.length){ toast('e','No orders selected'); return; }
-  _openPrintWindow(selected);
-}
-
-function _openPrintWindow(orderList){
-  // Get store info from contact settings if available
-  const storeName = 'RMZSTORE';
-  const storePhone = '';
-
-  const labelHtml = orderList.map(o=>{
-    const ts = o.createdAt?.seconds ? o.createdAt.seconds*1000 : (o.createdAt ? new Date(o.createdAt).getTime() : null);
-    const date = ts ? new Date(ts).toLocaleDateString('fr-DZ') : new Date().toLocaleDateString('fr-DZ');
-    const orderId = '#' + o.id.slice(-6).toUpperCase();
-    const tracking = o.trackingZR || o.trackingYalidine || '';
-    const product = (o.items||[]).map(i=>`${i.name}${i.qty>1?' ×'+i.qty:''}${Object.values(i.variants||{}).filter(Boolean).length?' ('+Object.entries(i.variants||{}).filter(([,v])=>v).map(([k,v])=>v).join(', ')+')':''}`).join('\n');
-    const deliveryLabel = o.deliveryType==='home' ? 'توصيل للمنزل / Home Delivery' : 'توصيل للمكتب / Office Pickup';
-
-    return `
-      <div class="label">
-        <!-- TOP BAR -->
-        <div class="label-top">
-          <div class="store-name">${storeName}</div>
-          <div class="order-id">${orderId}</div>
-        </div>
-
-        <!-- BARCODE AREA (tracking number or order ID) -->
-        <div class="barcode-area">
-          <div class="barcode-num">${tracking || o.id.slice(-6).toUpperCase()}</div>
-          <div class="barcode-bars">
-            ${Array.from({length:40},(_,i)=>`<div class="bar" style="width:${Math.random()>0.5?3:2}px"></div>`).join('')}
-          </div>
-          ${tracking ? `<div class="tracking-label">Tracking: ${tracking}</div>` : ''}
-        </div>
-
-        <div class="label-body">
-          <!-- RECIPIENT -->
-          <div class="section">
-            <div class="section-title">📦 DESTINATAIRE / RECIPIENT</div>
-            <div class="big-name">${o.name||'—'}</div>
-            <div class="big-phone">${o.phone||'—'}</div>
-            <div class="address">${o.address||'—'}</div>
-            <div class="wilaya-badge">${o.wilaya||'—'}</div>
-          </div>
-
-          <div class="divider"></div>
-
-          <!-- ORDER DETAILS -->
-          <div class="section">
-            <div class="section-title">🛍️ COMMANDE / ORDER</div>
-            <div class="products">${product.replace(/\n/g,'<br/>')}</div>
-          </div>
-
-          <div class="divider"></div>
-
-          <!-- PAYMENT & DELIVERY -->
-          <div class="bottom-grid">
-            <div class="bottom-cell">
-              <div class="bottom-label">TYPE</div>
-              <div class="bottom-val">${deliveryLabel}</div>
-            </div>
-            <div class="bottom-cell cod">
-              <div class="bottom-label">À PAYER / COD</div>
-              <div class="cod-amount">${new Intl.NumberFormat('fr-DZ').format(o.total||0)} DA</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- FOOTER -->
-        <div class="label-footer">
-          <span>Date: ${date}</span>
-          <span>${storeName}</span>
-          <span>${orderId}</span>
-        </div>
-
-        <!-- INSTRUCTIONS BOX -->
-        <div class="instructions">
-          <strong>⚠️ Fragile — Handle with care</strong> &nbsp;|&nbsp;
-          Ne pas plier &nbsp;|&nbsp; Cash on Delivery: <strong>${new Intl.NumberFormat('fr-DZ').format(o.total||0)} DA</strong>
-        </div>
-      </div>`;
-  }).join('<div class="page-break"></div>');
-
-  const win = window.open('', '_blank', 'width=800,height=900');
-  win.document.write(`<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8"/>
-<title>Shipping Labels — ${storeName}</title>
-<style>
-  *{ box-sizing:border-box; margin:0; padding:0; }
-  body{ font-family: 'Arial', sans-serif; background:#f5f5f5; padding:20px; }
-
-  .label{
-    width:148mm; min-height:210mm;
-    background:#fff; border:2px solid #000;
-    margin:0 auto 20px; padding:0;
-    page-break-after: always;
-    display:flex; flex-direction:column;
-    box-shadow:0 2px 8px rgba(0,0,0,0.15);
-  }
-
-  /* TOP BAR */
-  .label-top{
-    background:#000; color:#fff;
-    display:flex; justify-content:space-between; align-items:center;
-    padding:8px 12px;
-  }
-  .store-name{ font-size:18px; font-weight:900; letter-spacing:3px; }
-  .order-id{ font-size:14px; font-weight:700; background:#D4AF37; color:#000; padding:3px 10px; border-radius:4px; }
-
-  /* BARCODE */
-  .barcode-area{ padding:10px 12px; border-bottom:1px dashed #ccc; text-align:center; }
-  .barcode-num{ font-size:22px; font-weight:900; letter-spacing:4px; font-family:monospace; margin-bottom:6px; }
-  .barcode-bars{ display:flex; align-items:stretch; justify-content:center; height:45px; gap:1px; margin:0 auto; width:fit-content; }
-  .bar{ background:#000; border-radius:1px; }
-  .tracking-label{ font-size:10px; color:#666; margin-top:4px; }
-
-  /* BODY */
-  .label-body{ flex:1; padding:12px; }
-  .section{ margin-bottom:10px; }
-  .section-title{ font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#888; margin-bottom:5px; }
-  .big-name{ font-size:20px; font-weight:900; margin-bottom:3px; }
-  .big-phone{ font-size:18px; font-weight:700; color:#D62828; margin-bottom:4px; letter-spacing:1px; }
-  .address{ font-size:12px; color:#333; margin-bottom:5px; line-height:1.4; }
-  .wilaya-badge{
-    display:inline-block; background:#000; color:#fff;
-    font-size:13px; font-weight:800; padding:4px 14px; border-radius:20px;
-    letter-spacing:1px; margin-top:2px;
-  }
-  .products{ font-size:12px; line-height:1.6; color:#333; }
-  .divider{ border:none; border-top:1px dashed #bbb; margin:8px 0; }
-
-  /* BOTTOM GRID */
-  .bottom-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
-  .bottom-cell{ background:#f8f8f8; border:1px solid #ddd; border-radius:6px; padding:8px 10px; }
-  .bottom-label{ font-size:9px; font-weight:700; letter-spacing:2px; color:#888; margin-bottom:3px; }
-  .bottom-val{ font-size:11px; font-weight:600; }
-  .cod{ background:#fff8e6; border-color:#D4AF37; }
-  .cod-amount{ font-size:20px; font-weight:900; color:#D62828; }
-
-  /* FOOTER */
-  .label-footer{
-    background:#f0f0f0; border-top:1px solid #ddd;
-    display:flex; justify-content:space-between;
-    padding:5px 12px; font-size:10px; color:#666;
-  }
-
-  /* INSTRUCTIONS */
-  .instructions{
-    background:#fff3cd; border-top:2px solid #D4AF37;
-    padding:6px 12px; font-size:10px; color:#555; text-align:center;
-  }
-
-  /* PAGE BREAK */
-  .page-break{ page-break-after:always; }
-
-  /* PRINT BUTTON (screen only) */
-  .print-btn{
-    display:block; width:200px; margin:0 auto 20px;
-    padding:12px; background:#000; color:#fff;
-    border:none; border-radius:8px; font-size:15px;
-    font-weight:700; cursor:pointer; text-align:center;
-  }
-  .print-btn:hover{ background:#333; }
-
-  @media print{
-    body{ background:#fff; padding:0; }
-    .print-btn{ display:none; }
-    .label{ box-shadow:none; margin:0; }
-  }
-</style>
-</head>
-<body>
-  <button class="print-btn" onclick="window.print()">🖨️ Print Labels</button>
-  ${labelHtml}
-  <script>
-    // Auto-open print dialog after a short delay
-    setTimeout(()=>window.print(), 600);
-  <\/script>
-</body>
-</html>`);
-  win.document.close();
-}
-
-// ── Dispatch a single order ──
-async function dispatchSingleOrder(orderId){
-  if(!_dispatchService){ toast('e','Select a delivery service first'); return; }
-  const o = orders.find(x=>x.id===orderId);
-  if(!o){ toast('e','Order not found'); return; }
-  await _sendToDeliveryService([o]);
-}
-
-// ── Dispatch all selected orders ──
-async function dispatchSelected(){
-  if(!_dispatchService){ toast('e','Select a delivery service first'); return; }
-  const selected = orders.filter(o=>_selectedDispatchIds.has(o.id));
-  if(!selected.length){ toast('e','No orders selected'); return; }
-  await _sendToDeliveryService(selected);
-}
-
-// ── Core dispatch function ──
-async function _sendToDeliveryService(orderList){
-  const svc = _dispatchService;
-  if(svc==='zr')       return await _dispatchZR(orderList);
-  if(svc==='yalidine') return await _dispatchYalidine(orderList);
-}
-
-// ── ZR Express dispatch ──
-async function _dispatchZR(orderList){
-  const token   = localStorage.getItem('rmz_zr_token')||'';
-  const storeId = localStorage.getItem('rmz_zr_store')||'';
-  if(!token){
-    toast('e','Add your ZR Express API token first — click API Keys');
-    toggleApiConfig();
-    selectService('zr', true);
-    document.getElementById('api-config-fields').style.display='block';
-    document.getElementById('zr-config').style.display='block';
-    return;
-  }
-  let ok=0, fail=0;
-  for(const o of orderList){
-    const body = {
-      reference:    o.id.slice(-6).toUpperCase(),
-      nom:          o.name||'',
-      prenom:       '',
-      telephone:    o.phone||'',
-      telephone2:   '',
-      adresse:      o.address||'',
-      id_wilaya:    _wilayaToCode(o.wilaya),
-      produit:      (o.items||[]).map(i=>i.name).join(', ')||'Commande',
-      prix:         o.total||0,
-      remarque:     o.notes||'',
-      type_livraison: o.deliveryType==='home'?1:2,
-    };
-    if(storeId) body.id_boutique = storeId;
-    try{
-      const res = await fetch('https://zrapi.zr-express.dz/api/parcel/add', {
-        method:'POST',
-        headers:{ 'Authorization':'Bearer '+token, 'Content-Type':'application/json', 'Accept':'application/json' },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if(res.ok && (data.success||data.id||data.tracking)){
-        ok++;
-        // Update order status to "delivered" prep — mark as "delayed" to show in transit
-        await window._fbSave('orders', o.id, {...o, status:'contacted', dispatchedAt:new Date().toISOString(), trackingZR: data.tracking||data.id||''});
-        const lo=orders.find(x=>x.id===o.id); if(lo){ lo.dispatchedAt=new Date().toISOString(); }
-      } else {
-        fail++;
-        console.error('ZR error for',o.id, data);
-      }
-    }catch(e){ fail++; console.error('ZR fetch error',e); }
-  }
-  if(ok)   toast('s', `✓ ${ok} order${ok>1?'s':''} sent to ZR Express!`);
-  if(fail) toast('e', `${fail} order${fail>1?'s':''} failed — check API token & wilaya codes`);
-  if(ok)   renderDispatch(); renderOrders();
-}
-
-// ── Yalidine dispatch ──
-async function _dispatchYalidine(orderList){
-  const apiId    = localStorage.getItem('rmz_yal_id')||'';
-  const apiToken = localStorage.getItem('rmz_yal_token')||'';
-  if(!apiId||!apiToken){
-    toast('e','Add your Yalidine API credentials first — click API Keys');
-    toggleApiConfig();
-    selectService('yalidine', true);
-    document.getElementById('api-config-fields').style.display='block';
-    document.getElementById('yal-config').style.display='block';
-    return;
-  }
-  let ok=0, fail=0;
-  for(const o of orderList){
-    const body = {
-      order_id:       o.id.slice(-6).toUpperCase(),
-      firstname:      (o.name||'').split(' ')[0]||'',
-      familyname:     (o.name||'').split(' ').slice(1).join(' ')||'.',
-      contact_phone:  o.phone||'',
-      address:        o.address||'',
-      to_wilaya_id:   _wilayaToCode(o.wilaya),
-      to_commune_id:  1,
-      product_list:   (o.items||[]).map(i=>i.name).join(', ')||'Commande',
-      price:          o.total||0,
-      do_insurance:   0,
-      declared_value: o.total||0,
-      height:10, width:15, length:20, weight:0.5,
-      freeshipping:   0,
-      is_stopdesk:    o.deliveryType==='office'?1:0,
-      note:           o.notes||'',
-    };
-    try{
-      const res = await fetch('https://api.yalidine.app/v1/parcels/', {
-        method:'POST',
-        headers:{ 'X-API-ID':apiId, 'X-API-TOKEN':apiToken, 'Content-Type':'application/json' },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if(res.ok && (data.tracking||data.id)){
-        ok++;
-        await window._fbSave('orders', o.id, {...o, status:'contacted', dispatchedAt:new Date().toISOString(), trackingYalidine: data.tracking||data.id||''});
-        const lo=orders.find(x=>x.id===o.id); if(lo){ lo.dispatchedAt=new Date().toISOString(); }
-      } else {
-        fail++;
-        console.error('Yalidine error for',o.id, data);
-      }
-    }catch(e){ fail++; console.error('Yalidine fetch error',e); }
-  }
-  if(ok)   toast('s', `✓ ${ok} order${ok>1?'s':''} sent to Yalidine!`);
-  if(fail) toast('e', `${fail} order${fail>1?'s':''} failed — check credentials`);
-  if(ok)   renderDispatch(); renderOrders();
-}
-
-// Map wilaya name → numeric code (1–58)
-function _wilayaToCode(name){
-  if(!name) return 1;
-  const idx = WILAYAS.indexOf(name);
-  return idx>=0 ? idx+1 : 1;
-}
 </script>
 
 <!-- ═══════════════════════════════════════════
@@ -4059,192 +3508,152 @@ window.addEventListener('appinstalled', () => {
 });
 
 // ============================================================
-//  RMZSTORE — REALTIME NOTIFICATIONS
-//  Uses Supabase Realtime WebSocket (Phoenix protocol)
-//  Works: foreground tab, background PWA, installed PWA
+//  REALTIME NOTIFICATIONS — Supabase WebSocket (Phoenix)
 // ============================================================
 const _NOTIF = (() => {
-  const SB_URL   = 'https://ktsmmobntabchkvbfhpl.supabase.co';
-  const SB_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0c21tb2JudGFiY2hrdmJmaHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzcxNTUsImV4cCI6MjA4ODg1MzE1NX0.y3q1E2rjzEOa7_v08tO-TVuB0RivFznGZ5Q9k_PP4_s';
-  const WS_URL   = SB_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
+  const SB_URL = 'https://ktsmmobntabchkvbfhpl.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0c21tb2JudGFiY2hrdmJmaHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzcxNTUsImV4cCI6MjA4ODg1MzE1NX0.y3q1E2rjzEOa7_v08tO-TVuB0RivFznGZ5Q9k_PP4_s';
+  const WS    = SB_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
 
-  // Collections to watch and their notification config
   const WATCH = {
-    orders:          { icon: '🛍️', title: 'New Order!',           body: r => `${r.name || 'Customer'} — ${r.wilaya || ''} · ${r.total ? new Intl.NumberFormat('fr-DZ').format(r.total)+' DA' : ''}`, section: 'orders'   },
-    messages:        { icon: '💬', title: 'New Message!',          body: r => `${r.name || 'Unknown'}: ${(r.message || '').slice(0, 80)}`,                                                                section: 'messages'  },
-    exchangeRequests:{ icon: '🔄', title: 'New Exchange Request!', body: r => `${r.name || 'Customer'} wants to ${r.type || 'exchange'} — ${r.model || ''}`,                                             section: 'exchange'  },
-    returnRequests:  { icon: '↩️', title: 'New Return Request!',   body: r => `${r.name || 'Customer'} — ${r.model || r.orderId || ''}`,                                                                 section: 'returns'   },
+    orders:           { icon:'🛍️', title:'New Order!',           body: r=>`${r.name||'Customer'} — ${r.wilaya||''} · ${r.total?new Intl.NumberFormat('fr-DZ').format(r.total)+' DA':''}`, section:'orders'   },
+    messages:         { icon:'💬', title:'New Message!',          body: r=>`${r.name||'Unknown'}: ${(r.message||'').slice(0,80)}`,                                                           section:'messages'  },
+    exchangeRequests: { icon:'🔄', title:'New Exchange Request!', body: r=>`${r.name||'Customer'} — ${r.type||'exchange'} · ${r.model||''}`,                                                section:'exchange'  },
+    returnRequests:   { icon:'↩️', title:'New Return Request!',   body: r=>`${r.name||'Customer'} — ${r.model||r.orderId||''}`,                                                             section:'returns'   },
   };
 
-  // Track seen IDs to avoid duplicate notifications
-  let _seenIds = new Set();
-  let _ws      = null;
-  let _hbTimer = null;
-  let _retryTimer = null;
-  let _retryCount = 0;
-  let _started = false;
-  let _ref     = 1;
+  let _seen=new Set(), _ws=null, _hb=null, _retry=null, _started=false, _ref=1;
 
-  // ── Seed known IDs from current data so we don't fire on first load ──
-  function seedIds() {
-    orders.forEach(o => _seenIds.add(o.id));
-    msgs.forEach(m => _seenIds.add(m.id));
-    exchs.forEach(e => _seenIds.add(e.id));
-    returns.forEach(r => _seenIds.add(r.id));
+  function seedIds(){
+    (typeof orders!=='undefined'?orders:[]).forEach(o=>_seen.add(o.id));
+    (typeof msgs!=='undefined'?msgs:[]).forEach(m=>_seen.add(m.id));
+    (typeof exchs!=='undefined'?exchs:[]).forEach(e=>_seen.add(e.id));
+    (typeof returns!=='undefined'?returns:[]).forEach(r=>_seen.add(r.id));
   }
 
-  // ── Show a native notification ──
-  function notify(cfg, record) {
-    const title = cfg.icon + ' ' + cfg.title;
-    const body  = cfg.body(record);
-
-    // In-app toast (always shown, even if tab is focused)
-    toast('s', `${cfg.icon} <strong>${cfg.title}</strong> ${body.slice(0, 60)}`);
-
-    // Native OS notification (works backgrounded / PWA installed)
-    if (Notification.permission === 'granted') {
-      const n = new Notification(title, {
-        body,
-        icon:  '/icons/icon-192.png',
-        badge: '/icons/icon-96.png',
-        tag:   record.id,            // deduplication: same tag = replace, not stack
-        renotify: true,
-        vibrate: [200, 100, 200],
-        data:  { section: cfg.section }
-      });
-      // Clicking the notification opens/focuses the app and jumps to the right section
-      n.onclick = () => {
-        window.focus();
-        showSec(cfg.section);
-        n.close();
-      };
+  function notify(cfg, record){
+    const body = cfg.body(record);
+    toast('s', cfg.icon + ' <strong>' + cfg.title + '</strong> ' + body.slice(0,60));
+    if('Notification' in window && Notification.permission==='granted'){
+      try {
+        const n = new Notification(cfg.icon + ' ' + cfg.title, {
+          body, icon:'/icons/icon-192.png', badge:'/icons/icon-96.png',
+          tag: record.id, renotify:true, vibrate:[200,100,200],
+          data:{ section: cfg.section }
+        });
+        n.onclick = () => { window.focus(); showSec(cfg.section); n.close(); };
+      } catch(e){ console.warn('[NOTIF]', e); }
     }
   }
 
-  // ── Handle an INSERT event from Supabase Realtime ──
-  function handleInsert(payload) {
-    const rec_id   = payload?.record?.rec_id;
-    const col      = payload?.record?.collection;
-    const data     = payload?.record?.data || {};
-
-    if (!rec_id || !col) return;
-    if (_seenIds.has(rec_id)) return;   // already known
-    _seenIds.add(rec_id);
-
+  function handleInsert(payload){
+    const rec_id = payload?.record?.rec_id;
+    const col    = payload?.record?.collection;
+    const data   = payload?.record?.data || {};
+    if(!rec_id||!col) return;
+    if(_seen.has(rec_id)) return;
+    _seen.add(rec_id);
     const cfg = WATCH[col];
-    if (!cfg) return;
-
-    // Merge rec_id as id so body builder can use it
-    notify(cfg, { id: rec_id, ...data });
-
-    // Also refresh the relevant data array & re-render dashboard
-    if (col === 'orders')           { loadOrders().then(() => renderDashboard()); }
-    if (col === 'messages')         { loadMsgs().then(() => renderDashboard()); }
-    if (col === 'exchangeRequests') { loadExch().then(() => renderDashboard()); }
-    if (col === 'returnRequests')   { loadReturns().then(() => renderDashboard()); }
+    if(!cfg) return;
+    notify(cfg, {id:rec_id, ...data});
+    if(col==='orders')           loadOrders().then(()=>renderDashboard());
+    if(col==='messages')         loadMsgs().then(()=>renderDashboard());
+    if(col==='exchangeRequests') loadExch().then(()=>renderDashboard());
+    if(col==='returnRequests')   loadReturns().then(()=>renderDashboard());
   }
 
-  // ── Build and send a Phoenix channel message ──
-  function send(obj) {
-    if (_ws && _ws.readyState === WebSocket.OPEN) {
-      _ws.send(JSON.stringify({ ...obj, ref: String(_ref++) }));
-    }
-  }
+  function send(obj){ if(_ws&&_ws.readyState===1) _ws.send(JSON.stringify({...obj,ref:String(_ref++)})); }
 
-  // ── Subscribe to the store table ──
-  function subscribe() {
+  function subscribe(){
     send({
-      topic:   'realtime:public:store',
-      event:   'phx_join',
-      payload: {
-        config: {
-          broadcast:       { self: false },
-          presence:        { key: '' },
-          postgres_changes: [{ event: 'INSERT', schema: 'public', table: 'store' }]
-        }
-      }
+      topic:'realtime:public:store', event:'phx_join',
+      payload:{ config:{ broadcast:{self:false}, presence:{key:''}, postgres_changes:[{event:'INSERT',schema:'public',table:'store'}] } }
     });
   }
 
-  // ── Start heartbeat (every 25 s, required by Phoenix) ──
-  function startHeartbeat() {
-    clearInterval(_hbTimer);
-    _hbTimer = setInterval(() => {
-      send({ topic: 'phoenix', event: 'heartbeat', payload: {} });
-    }, 25000);
-  }
+  function startHB(){ clearInterval(_hb); _hb=setInterval(()=>send({topic:'phoenix',event:'heartbeat',payload:{}}),25000); }
 
-  // ── Connect (or reconnect) ──
-  function connect() {
-    if (_ws) { try { _ws.close(); } catch(e){} }
-
-    _ws = new WebSocket(WS_URL);
-
-    _ws.onopen = () => {
-      _retryCount = 0;
-      subscribe();
-      startHeartbeat();
-      console.log('[NOTIF] Realtime connected');
+  let _retryCount=0;
+  function connect(){
+    if(_ws){ try{_ws.close();}catch(e){} }
+    _ws = new WebSocket(WS);
+    _ws.onopen  = ()=>{ _retryCount=0; subscribe(); startHB(); };
+    _ws.onmessage = (e)=>{
+      try{
+        const m = JSON.parse(e.data);
+        if((m.event==='postgres_changes'||m.event==='*') && m.payload?.data?.type==='INSERT') handleInsert(m.payload.data);
+        if(m.event==='INSERT' && m.payload?.record) handleInsert(m.payload);
+      }catch(err){}
     };
-
-    _ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        // Phoenix: postgres_changes event arrives as "postgres_changes" inside payload
-        if (msg.event === 'postgres_changes' || msg.event === '*') {
-          const changes = msg.payload?.data || msg.payload;
-          if (changes?.type === 'INSERT') handleInsert(changes);
-        }
-        // Supabase wraps it differently in some versions:
-        if (msg.event === 'phx_reply' && msg.payload?.response?.postgres_changes) {
-          // Subscription confirmed — nothing to do
-        }
-        // Newer Supabase realtime sends "INSERT" directly as event
-        if (msg.event === 'INSERT' && msg.payload?.record) {
-          handleInsert(msg.payload);
-        }
-      } catch(err) { /* ignore malformed frames */ }
-    };
-
-    _ws.onerror = (e) => console.warn('[NOTIF] WebSocket error', e);
-
-    _ws.onclose = () => {
-      clearInterval(_hbTimer);
-      // Exponential backoff reconnect (max 30 s)
-      const delay = Math.min(1000 * Math.pow(2, _retryCount++), 30000);
-      console.log(`[NOTIF] Disconnected. Reconnecting in ${delay}ms…`);
-      _retryTimer = setTimeout(connect, delay);
+    _ws.onerror = ()=>{};
+    _ws.onclose = ()=>{
+      clearInterval(_hb);
+      if(!_started) return;
+      const delay = Math.min(1000*Math.pow(2,_retryCount++),30000);
+      _retry = setTimeout(connect, delay);
     };
   }
 
-  // ── Public: call once after login + data loaded ──
-  function start() {
-    if (_started) return;
+  function start(){
+    if(_started) return;
     _started = true;
     seedIds();
-
-    // Ask for notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then(p => {
-        if (p === 'granted') toast('s', '🔔 Notifications enabled!');
-        else                 toast('e', 'Notifications blocked — enable in browser settings');
+    updateNotifBtn();
+    if('Notification' in window && Notification.permission==='default'){
+      Notification.requestPermission().then(p=>{
+        updateNotifBtn();
+        if(p==='granted') toast('s','🔔 Notifications enabled!');
+        else              toast('e','Notifications blocked — use the 🔔 button in the toolbar to enable');
       });
     }
-
     connect();
   }
 
-  // ── Public: call on logout to clean up ──
-  function stop() {
-    _started = false;
-    clearInterval(_hbTimer);
-    clearTimeout(_retryTimer);
-    _seenIds.clear();
-    if (_ws) { try { _ws.close(); } catch(e){} _ws = null; }
+  function stop(){
+    _started=false;
+    clearInterval(_hb); clearTimeout(_retry); _seen.clear();
+    if(_ws){ try{_ws.close();}catch(e){} _ws=null; }
   }
 
-  return { start, stop };
+  return {start, stop};
 })();
+
+function updateNotifBtn(){
+  const btn = document.getElementById('notifPermBtn');
+  if(!btn || !('Notification' in window)) return;
+  if(Notification.permission==='granted'){
+    btn.style.display='none';
+  } else {
+    btn.style.display='inline-flex';
+    btn.innerHTML = Notification.permission==='denied'
+      ? '<i class="fas fa-bell-slash"></i> Notifications Blocked'
+      : '<i class="fas fa-bell"></i> Enable Notifications';
+    btn.title = Notification.permission==='denied'
+      ? 'Go to browser Settings → Site Settings → Notifications to allow.'
+      : 'Click to enable push notifications';
+  }
+}
+
+async function requestNotifPermission(){
+  if(!('Notification' in window)){ toast('e','Notifications not supported in this browser'); return; }
+  if(Notification.permission==='denied'){
+    toast('e','Blocked. Go to: Browser Settings → Site Settings → Notifications → Allow for this site');
+    return;
+  }
+  const p = await Notification.requestPermission();
+  updateNotifBtn();
+  if(p==='granted'){
+    toast('s','🔔 Notifications enabled!');
+    setTimeout(()=>{
+      new Notification('🔔 RMZSTORE Notifications', {
+        body:'You will now receive alerts for new orders, messages, and requests.',
+        icon:'/icons/icon-192.png'
+      });
+    }, 500);
+  } else {
+    toast('e','Notifications blocked. Enable them in your browser settings.');
+  }
+}
 
 // ============================================
 // DANGER ZONE — DELETE DATA
