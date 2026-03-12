@@ -3602,10 +3602,11 @@ const _NOTIF = (() => {
     if('Notification' in window && Notification.permission==='default'){
       Notification.requestPermission().then(p=>{
         updateNotifBtn();
-        if(p==='granted') toast('s','🔔 Notifications enabled!');
+        if(p==='granted'){ toast('s','🔔 Notifications enabled!'); registerPushSubscription(); }
         else              toast('e','Notifications blocked — use the 🔔 button in the toolbar to enable');
       });
     }
+    if('Notification' in window && Notification.permission==='granted') registerPushSubscription();
     connect();
   }
 
@@ -3634,6 +3635,39 @@ function updateNotifBtn(){
   }
 }
 
+// ── Push subscription ─────────────────────────────────────────────────────
+const VAPID_PUBLIC_KEY = 'BGPxBcxjYxhZom-bAqF8lfm4T0IqzqNJDhb_sTEHnGmASac0GEUZ2WxBQokW3ZuClqpFwIHkdzb2goy_lLHIa0U';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw     = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function registerPushSubscription() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const reg = await navigator.serviceWorker.ready;
+    let sub   = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    // Save to Supabase
+    const SB_URL = 'https://ktsmmobntabchkvbfhpl.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0c21tb2JudGFiY2hrdmJmaHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzcxNTUsImV4cCI6MjA4ODg1MzE1NX0.y3q1E2rjzEOa7_v08tO-TVuB0RivFznGZ5Q9k_PP4_s';
+    await fetch(SB_URL + '/rest/v1/push_subscriptions', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ endpoint: sub.endpoint, subscription: sub.toJSON() })
+    });
+    console.log('[PUSH] Subscription saved ✓');
+  } catch(e) { console.warn('[PUSH] Subscribe failed:', e); }
+}
+
 async function requestNotifPermission(){
   if(!('Notification' in window)){ toast('e','Notifications not supported in this browser'); return; }
   if(Notification.permission==='denied'){
@@ -3644,6 +3678,7 @@ async function requestNotifPermission(){
   updateNotifBtn();
   if(p==='granted'){
     toast('s','🔔 Notifications enabled!');
+    await registerPushSubscription();
     setTimeout(()=>{
       new Notification('🔔 RMZSTORE Notifications', {
         body:'You will now receive alerts for new orders, messages, and requests.',
