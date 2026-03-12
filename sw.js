@@ -3,7 +3,7 @@
 //  Handles: caching, offline fallback, background sync
 // ============================================================
 
-const CACHE_NAME    = 'rmzstore-admin-v6';
+const CACHE_NAME    = 'rmzstore-admin-v7';
 const OFFLINE_PAGE  = '/admin.html';
 
 // Files to pre-cache on install (shell)
@@ -37,15 +37,14 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── Fetch: network-first for same-origin, pass through all external CDN ──
+// ── Fetch: network-first for same-origin only ──────────────
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Skip non-GET requests
+  // Only handle GET requests from the same origin.
+  // All external CDNs (fonts, FontAwesome, APIs, etc.) are passed
+  // straight through to the browser — no SW interception at all.
   if (event.request.method !== 'GET') return;
-
-  // Only intercept same-origin requests — let the browser handle all
-  // external CDNs (fonts, FontAwesome, APIs) natively without SW interference
   if (url.origin !== self.location.origin) return;
 
   // Same-origin requests → network-first with offline fallback

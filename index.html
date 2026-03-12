@@ -4,6 +4,14 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>RMZSTORE — Premium Smartphones & Accessories</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
+<link rel="apple-touch-icon" href="/icons/icon-180.png"/>
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png"/>
+<link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png"/>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#D4AF37"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
@@ -36,7 +44,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'DM Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow-x:hidden;min-height:100vh;-webkit-overflow-scrolling:touch;overscroll-behavior-y:none}
+body{font-family:'DM Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow-x:hidden;min-height:100vh}
 a{text-decoration:none;color:inherit}
 img{max-width:100%;display:block}
 button{cursor:pointer;font-family:inherit;border:none;outline:none}
@@ -428,12 +436,11 @@ ul{list-style:none}
   .categories-grid{
     grid-template-columns:1fr;
     gap:14px;
-    overflow:hidden;
   }
-  @keyframes slideFromRight{from{opacity:0;transform:translateX(48px)}to{opacity:1;transform:translateX(0)}}
-  @keyframes slideFromLeft{from{opacity:0;transform:translateX(-48px)}to{opacity:1;transform:translateX(0)}}
-  .cat-slide-right{opacity:0;animation:slideFromRight 0.55s cubic-bezier(0.22,1,0.36,1) forwards;will-change:transform,opacity}
-  .cat-slide-left {opacity:0;animation:slideFromLeft  0.55s cubic-bezier(0.22,1,0.36,1) forwards;will-change:transform,opacity}
+  @keyframes slideFromRight{from{opacity:0;transform:translateX(110vw)}to{opacity:1;transform:translateX(0)}}
+  @keyframes slideFromLeft{from{opacity:0;transform:translateX(-110vw)}to{opacity:1;transform:translateX(0)}}
+  .cat-slide-right{opacity:0;animation:slideFromRight 1s cubic-bezier(0.22,1,0.36,1) forwards}
+  .cat-slide-left {opacity:0;animation:slideFromLeft  1s cubic-bezier(0.22,1,0.36,1) forwards}
   .category-card{
     position:relative;
     display:block;
@@ -2387,7 +2394,7 @@ window._renderCategories = function(cats) {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const idx = parseInt(entry.target.dataset.catIndex);
-          const delay = (Math.min(idx, 5) * 0.08) + 's';
+          const delay = (idx * 0.12) + 's';
           entry.target.style.animationDelay = delay;
           entry.target.classList.add(idx % 2 === 0 ? 'cat-slide-right' : 'cat-slide-left');
           observer.unobserve(entry.target);
