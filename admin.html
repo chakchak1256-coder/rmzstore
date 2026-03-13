@@ -3533,7 +3533,7 @@ const _NOTIF = (() => {
     (typeof msgs!=='undefined'?msgs:[]).forEach(m=>_seen.add(m.id));
     (typeof exchs!=='undefined'?exchs:[]).forEach(e=>_seen.add(e.id));
     (typeof returns!=='undefined'?returns:[]).forEach(r=>_seen.add(r.id));
-    // Seed catalog IDs so bulk product imports never trip the notifier
+    // Seed catalog IDs so bulk product/category imports never trip the notifier
     (typeof prods!=='undefined'?prods:[]).forEach(p=>_seen.add(p.id));
     (typeof cats!=='undefined'?cats:[]).forEach(c=>_seen.add(c.id));
   }
@@ -3593,7 +3593,7 @@ function playDing() {
     const col    = payload?.record?.collection;
     const data   = payload?.record?.data || {};
     if(!rec_id||!col) return;
-    // Hard-ignore catalog/settings collections — product imports must never fire a notification
+    // Drop catalog/settings inserts immediately — product bulk imports must NEVER fire a notification
     if(_SILENT_COLS.has(col)) return;
     if(_seen.has(rec_id)) return;
     _seen.add(rec_id);
@@ -3609,17 +3609,9 @@ function playDing() {
   function send(obj){ if(_ws&&_ws.readyState===1) _ws.send(JSON.stringify({...obj,ref:String(_ref++)})); }
 
   function subscribe(){
-    // Filter at the Supabase level — only the 4 collections we actually notify on.
-    // Product/category inserts never reach the client, so bulk imports are completely silent.
-    const watchCols = ['orders','messages','exchangeRequests','returnRequests'];
     send({
       topic:'realtime:public:store', event:'phx_join',
-      payload:{ config:{ broadcast:{self:false}, presence:{key:''},
-        postgres_changes: watchCols.map(col=>({
-          event:'INSERT', schema:'public', table:'store',
-          filter:'collection=eq.'+col
-        }))
-      }}
+      payload:{ config:{ broadcast:{self:false}, presence:{key:''}, postgres_changes:[{event:'INSERT',schema:'public',table:'store'}] } }
     });
   }
 
