@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0, viewport-fit=cover"/>
 <title>RMZSTORE — Admin Dashboard</title>
 
 <!-- ═══════════════════════════════════════════
@@ -3441,20 +3441,16 @@ function validateOrderData(o) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      // Unregister any stale SW that has a scope other than '/'
-      // (old installs under /admin scope won't cover /admin-dashboard)
       const regs = await navigator.serviceWorker.getRegistrations();
       for (const r of regs) {
         if (r.scope && !r.scope.endsWith('/')) {
           await r.unregister();
-          console.log('[SW] Unregistered stale SW with scope:', r.scope);
+          console.log('[SW] Unregistered stale SW:', r.scope);
         }
       }
       const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
       console.log('[SW] Registered, scope:', reg.scope);
-    } catch(err) {
-      console.warn('[SW] Registration failed:', err);
-    }
+    } catch(err) { console.warn('[SW] Registration failed:', err); }
   });
 }
 
@@ -3585,24 +3581,14 @@ function playDing() {
     toast('s', cfg.icon + ' <strong>' + cfg.title + '</strong> ' + body.slice(0,60));
     if('Notification' in window && Notification.permission==='granted'){
       try {
-        const opts = {
+        // Always use direct Notification API — never SW showNotification for realtime alerts.
+        // SW showNotification triggers a separate system sound (Samsung/Android default), causing duplicates.
+        const n = new Notification(cfg.icon + ' ' + cfg.title, {
           body, icon:'/icons/icon-192.png', badge:'/icons/icon-96.png',
           tag: record.id, renotify:true, vibrate:[200,100,200],
           data:{ section: cfg.section }
-        };
-        const title = cfg.icon + ' ' + cfg.title;
-        if('serviceWorker' in navigator){
-          // Use a race: if SW isn't ready within 2s, fall back to Notification API
-          const swPromise = navigator.serviceWorker.ready
-            .then(reg => reg.showNotification(title, opts));
-          const fallback = new Promise((_,rej) => setTimeout(rej, 2000, 'sw-timeout'));
-          Promise.race([swPromise, fallback]).catch(() => {
-            try { const n = new Notification(title, opts); n.onclick = ()=>{ window.focus(); showSec(cfg.section); n.close(); }; } catch(e){}
-          });
-        } else {
-          const n = new Notification(title, opts);
-          n.onclick = () => { window.focus(); showSec(cfg.section); n.close(); };
-        }
+        });
+        n.onclick = () => { window.focus(); showSec(cfg.section); n.close(); };
       } catch(e){ console.warn('[NOTIF]', e); }
     }
   }
@@ -3743,15 +3729,11 @@ async function testNotification(){
   if(Notification.permission!=='granted'){ toast('e','Grant notification permission first!'); return; }
   try {
     const opts = { body: 'If you see this, notifications are working!', icon: '/icons/icon-192.png' };
-    try { new Notification('🧪 Test Notification', opts); } catch(e){}
     if('serviceWorker' in navigator){
-      try {
-        const reg = await Promise.race([
-          navigator.serviceWorker.ready,
-          new Promise((_,r)=>setTimeout(r,2000,'timeout'))
-        ]);
-        await reg.showNotification('🧪 Test Notification', opts);
-      } catch(e){}
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification('🧪 Test Notification', opts);
+    } else {
+      new Notification('🧪 Test Notification', opts);
     }
     toast('s', '✓ Test notification sent — did it pop up?');
   } catch(e) { toast('e', 'Error: ' + e.message); }
