@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0, viewport-fit=cover"/>
 <title>RMZSTORE — Admin Dashboard</title>
 
 <!-- ═══════════════════════════════════════════
@@ -3525,17 +3525,11 @@ const _NOTIF = (() => {
 
   let _seen=new Set(), _ws=null, _hb=null, _retry=null, _started=false, _ref=1;
 
-  // Collections that must NEVER trigger a notification (catalog / settings writes)
-  const _SILENT_COLS = new Set(['products','categories','deliveryTariffs','settings','offers']);
-
   function seedIds(){
     (typeof orders!=='undefined'?orders:[]).forEach(o=>_seen.add(o.id));
     (typeof msgs!=='undefined'?msgs:[]).forEach(m=>_seen.add(m.id));
     (typeof exchs!=='undefined'?exchs:[]).forEach(e=>_seen.add(e.id));
     (typeof returns!=='undefined'?returns:[]).forEach(r=>_seen.add(r.id));
-    // Seed catalog IDs so bulk product/category imports never trip the notifier
-    (typeof prods!=='undefined'?prods:[]).forEach(p=>_seen.add(p.id));
-    (typeof cats!=='undefined'?cats:[]).forEach(c=>_seen.add(c.id));
   }
 
 
@@ -3589,16 +3583,15 @@ function playDing() {
   }
 
   function handleInsert(payload){
+    console.log('[INSERT]', JSON.stringify(payload).slice(0,300));
     const rec_id = payload?.record?.rec_id;
     const col    = payload?.record?.collection;
     const data   = payload?.record?.data || {};
-    if(!rec_id||!col) return;
-    // Drop catalog/settings inserts immediately — product bulk imports must NEVER fire a notification
-    if(_SILENT_COLS.has(col)) return;
+    if(!rec_id||!col){ console.warn('[INSERT] missing rec_id or col', rec_id, col); return; }
     if(_seen.has(rec_id)) return;
     _seen.add(rec_id);
     const cfg = WATCH[col];
-    if(!cfg) return;
+    if(!cfg){ console.warn('[INSERT] no WATCH config for collection:', col); return; }
     notify(cfg, {id:rec_id, ...data});
     if(col==='orders')           loadOrders().then(()=>renderDashboard());
     if(col==='messages')         loadMsgs().then(()=>renderDashboard());
