@@ -438,50 +438,6 @@ select.fi option{background:var(--bg2)}
   /* Export buttons on mobile */
   .export-btn-group{flex-direction:column;gap:6px!important}
 }
-
-/* ============================================
-   MOBILE GLOBAL IMPROVEMENTS
-============================================ */
-@media(max-width:960px){
-  /* Card heads wrap and stack nicely */
-  .card-head{flex-direction:column;align-items:flex-start!important}
-  .card-head > div:last-child{width:100%}
-  /* Filters take full width on mobile */
-  .card-head select.fi,.card-head .srch{flex:1;min-width:0}
-  .card-head .srch input{width:100%!important}
-  /* Modals fill screen on mobile */
-  .mbox{max-width:100%!important;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:92vh!important}
-  .mo{align-items:flex-end!important;padding:0!important}
-  /* Dashboard grid stacks */
-  #sec-dashboard > div:last-child{grid-template-columns:1fr!important}
-  /* Topbar shrink */
-  .topbar{padding:0 12px;gap:8px}
-  .topbar-title{font-size:15px}
-  /* Content padding */
-  .content{padding:14px}
-  /* Exchange table scrollable */
-  #sec-exchange .tbl-wrap{overflow-x:auto}
-  /* Danger zone */
-  #dz-items label{padding:12px 14px}
-  /* Form rows */
-  .frow3{grid-template-columns:1fr 1fr!important}
-}
-@media(max-width:480px){
-  .stats-grid{grid-template-columns:1fr}
-  .content{padding:12px}
-  .card{padding:14px}
-  .frow3{grid-template-columns:1fr!important}
-  /* Google sheets bar */
-  #gs-bar{flex-direction:column;align-items:flex-start!important}
-  #gs-bar > div:last-child{width:100%}
-  #gs-sheet-id{width:100%!important}
-  /* Topbar minimal */
-  .tb-btn{padding:6px 10px;font-size:11px}
-  /* Modal wider */
-  .mbox{border-radius:14px 14px 0 0}
-  /* Return/exchange action buttons stack */
-  .td-actions{flex-wrap:wrap}
-}
 </style>
 </head>
 <body>
@@ -577,7 +533,7 @@ select.fi option{background:var(--bg2)}
             </div>
           </div>
           <button class="tb-btn" id="notifPermBtn" onclick="requestNotifPermission()" title="Enable Notifications" style="display:none"><i class="fas fa-bell-slash"></i> Notifications</button>
-          <button class="tb-btn" id="testNotifBtn" onclick="testNotification()" title="Test Notification" style="display:none!important"><i class="fas fa-vial"></i> Test Notif</button>
+          <button class="tb-btn" id="testNotifBtn" onclick="testNotification()" title="Test Notification" style="display:none"><i class="fas fa-vial"></i> Test Notif</button>
           <button class="tb-btn" id="refreshBtn" onclick="manualRefresh()"><i class="fas fa-sync-alt" id="refreshIcon"></i> Refresh</button>
           <a href="index.html" target="_blank" class="tb-btn"><i class="fas fa-external-link-alt"></i> View Site</a>
         </div>
@@ -635,10 +591,6 @@ select.fi option{background:var(--bg2)}
                 <div class="srch"><i class="fas fa-search"></i><input type="text" id="prodSearch" placeholder="Search..." oninput="filterProds()"/></div>
                 <select class="fi" id="prodCatFilter" style="width:150px;padding:8px 12px;font-size:12px" onchange="filterProds()">
                   <option value="">All Categories</option>
-                </select>
-                <select class="fi" id="prodSortF" style="width:140px;padding:8px 12px;font-size:12px" onchange="filterProds()">
-                  <option value="new">Newest First</option>
-                  <option value="old">Oldest First</option>
                 </select>
                 <button class="btn btn-primary" onclick="openProdModal()"><i class="fas fa-plus"></i> Add Product</button>
               </div>
@@ -729,10 +681,6 @@ select.fi option{background:var(--bg2)}
                   <option value="canceled_owner">Canceled by Owner</option>
                   <option value="completed">Completed</option>
                 </select>
-                <select class="fi" id="orderSortF" style="width:140px;padding:8px 12px;font-size:12px" onchange="filterOrders()">
-                  <option value="new">Newest First</option>
-                  <option value="old">Oldest First</option>
-                </select>
                 <div class="srch"><i class="fas fa-search"></i><input type="text" id="orderSearch" placeholder="Search..." oninput="filterOrders()"/></div>
                 <div class="export-btn-group" style="display:flex;gap:8px;flex-wrap:wrap">
                   <button class="btn btn-ghost btn-sm" onclick="exportOrdersToExcel()" title="Download as Excel/CSV"><i class="fas fa-file-excel" style="color:#1D6F42"></i> Export Excel</button>
@@ -763,10 +711,6 @@ select.fi option{background:var(--bg2)}
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <select class="fi" id="returnSortF" style="width:140px;padding:8px 12px;font-size:12px" onchange="filterReturns()">
-                  <option value="new">Newest First</option>
-                  <option value="old">Oldest First</option>
-                </select>
                 <div class="srch"><i class="fas fa-search"></i><input type="text" id="returnSearch" placeholder="Search..." oninput="filterReturns()"/></div>
               </div>
             </div>
@@ -784,13 +728,6 @@ select.fi option{background:var(--bg2)}
           <div class="card">
             <div class="card-head">
               <div class="card-title">Exchange / Sell Requests</div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-                <select class="fi" id="exchSortF" style="width:140px;padding:8px 12px;font-size:12px" onchange="renderExch()">
-                  <option value="new">Newest First</option>
-                  <option value="old">Oldest First</option>
-                </select>
-                <div class="srch"><i class="fas fa-search"></i><input type="text" id="exchSearch" placeholder="Search..." oninput="renderExch()"/></div>
-              </div>
             </div>
             <div class="tbl-wrap">
               <table>
@@ -806,13 +743,7 @@ select.fi option{background:var(--bg2)}
           <div class="card">
             <div class="card-head">
               <div class="card-title">Messages</div>
-              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                <select class="fi" id="msgSortF" style="width:140px;padding:8px 12px;font-size:12px" onchange="renderMsgs()">
-                  <option value="new">Newest First</option>
-                  <option value="old">Oldest First</option>
-                </select>
-                <button class="btn btn-ghost btn-sm" onclick="markAllRead()"><i class="fas fa-check-double"></i> Mark All Read</button>
-              </div>
+              <button class="btn btn-ghost btn-sm" onclick="markAllRead()"><i class="fas fa-check-double"></i> Mark All Read</button>
             </div>
             <div id="msgsList"><div class="loading"><div class="spinner"></div></div></div>
           </div>
@@ -985,14 +916,6 @@ select.fi option{background:var(--bg2)}
               <label style="display:flex;align-items:center;gap:14px;padding:14px 18px;border:1px solid var(--border2);border-radius:10px;cursor:pointer;transition:border-color 0.2s" onmouseover="this.style.borderColor='#e74c3c44'" onmouseout="this.style.borderColor=''">
                 <input type="checkbox" id="dz-messages" style="width:18px;height:18px;accent-color:#e74c3c;cursor:pointer">
                 <div><div style="font-weight:700;font-size:14px">Messages</div><div style="color:var(--text2);font-size:12px;margin-top:2px">All customer messages</div></div>
-              </label>
-              <label style="display:flex;align-items:center;gap:14px;padding:14px 18px;border:1px solid var(--border2);border-radius:10px;cursor:pointer;transition:border-color 0.2s" onmouseover="this.style.borderColor='#e74c3c44'" onmouseout="this.style.borderColor=''">
-                <input type="checkbox" id="dz-exchange" style="width:18px;height:18px;accent-color:#e74c3c;cursor:pointer">
-                <div><div style="font-weight:700;font-size:14px">Sell / Exchange Requests</div><div style="color:var(--text2);font-size:12px;margin-top:2px">All sell and exchange requests</div></div>
-              </label>
-              <label style="display:flex;align-items:center;gap:14px;padding:14px 18px;border:1px solid var(--border2);border-radius:10px;cursor:pointer;transition:border-color 0.2s" onmouseover="this.style.borderColor='#e74c3c44'" onmouseout="this.style.borderColor=''">
-                <input type="checkbox" id="dz-returns" style="width:18px;height:18px;accent-color:#e74c3c;cursor:pointer">
-                <div><div style="font-weight:700;font-size:14px">Return Requests</div><div style="color:var(--text2);font-size:12px;margin-top:2px">All customer return requests</div></div>
               </label>
             </div>
             <div style="display:flex;gap:12px;align-items:center">
@@ -1781,20 +1704,10 @@ function renderDashboard(){
 function renderProds(){
   const search=(document.getElementById('prodSearch')?.value||'').toLowerCase();
   const catF=document.getElementById('prodCatFilter')?.value||'';
-  const sortF=document.getElementById('prodSortF')?.value||'new';
-  let filtered=prods.filter(p=>
+  const filtered=prods.filter(p=>
     (!search||p.name?.toLowerCase().includes(search)||p.brand?.toLowerCase().includes(search))&&
     (!catF||p.category===catF)
   );
-  // Sort newest first by default (prods array index acts as insertion order proxy)
-  filtered = filtered.slice().sort((a,b)=> sortF==='old' ? 0 : 0); // keep insertion order for now; reverse for 'new'
-  if(sortF==='new') filtered = filtered.slice().reverse().sort(()=>0); // newest = last inserted first
-  // Use actual index in prods array as proxy for insertion time
-  filtered = prods.filter(p=>
-    (!search||p.name?.toLowerCase().includes(search)||p.brand?.toLowerCase().includes(search))&&
-    (!catF||p.category===catF)
-  );
-  if(sortF==='new') filtered = filtered.slice().reverse();
   document.getElementById('prodCount').textContent=`(${filtered.length})`;
   const tb=document.getElementById('prodTbody');
   if(!filtered.length){tb.innerHTML='<tr><td colspan="8"><div class="empty-s"><i class="fas fa-box-open"></i><p>No products found</p></div></td></tr>';return;}
@@ -2490,17 +2403,10 @@ function renderOrders(){
   
   const statusF=document.getElementById('orderStatusF')?.value||'';
   const search=(document.getElementById('orderSearch')?.value||'').toLowerCase();
-  const sortF=document.getElementById('orderSortF')?.value||'new';
-  let filtered=orders.filter(o=>
+  const filtered=orders.filter(o=>
     (!statusF||o.status===statusF)&&
     (!search||o.name?.toLowerCase().includes(search)||o.id?.toLowerCase().includes(search)||o.phone?.includes(search))
   );
-  // Sort: newest first by default
-  filtered = filtered.slice().sort((a,b)=>{
-    const ta = a.createdAt?.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-    const tb2 = b.createdAt?.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-    return sortF==='old' ? ta-tb2 : tb2-ta;
-  });
   const tb=document.getElementById('ordersTbody');
   const cards=document.getElementById('orderCards');
   if(!filtered.length){
@@ -2707,18 +2613,8 @@ function viewOrder(id){
 async function renderExch(){
   await loadExch();
   const tb=document.getElementById('exchTbody');
-  const sortF=document.getElementById('exchSortF')?.value||'new';
-  const searchF=(document.getElementById('exchSearch')?.value||'').toLowerCase();
-  let list = exchs.filter(r=>
-    !searchF||(r.name||'').toLowerCase().includes(searchF)||(r.phone||'').includes(searchF)||(r.model||'').toLowerCase().includes(searchF)
-  );
-  list = list.slice().sort((a,b)=>{
-    const ta = a.createdAt?.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-    const tb2 = b.createdAt?.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-    return sortF==='old' ? ta-tb2 : tb2-ta;
-  });
-  if(!list.length){tb.innerHTML='<tr><td colspan="9"><div class="empty-s"><i class="fas fa-exchange-alt"></i><p>No requests yet</p></div></td></tr>';return;}
-  tb.innerHTML=list.map(r=>{
+  if(!exchs.length){tb.innerHTML='<tr><td colspan="9"><div class="empty-s"><i class="fas fa-exchange-alt"></i><p>No requests yet</p></div></td></tr>';return;}
+  tb.innerHTML=exchs.map(r=>{
     const date=r.createdAt?.seconds?new Date(r.createdAt.seconds*1000).toLocaleDateString('fr-DZ'):'—';
     const condClass={'Like New':'cond-new','Good':'cond-good','Fair':'cond-fair','Poor':'cond-poor','For Parts':'cond-poor'}[r.condition]||'';
     return `<tr>
@@ -2779,16 +2675,10 @@ async function renderReturns(){
 function filterReturns(){
   const statusF=(document.getElementById('returnStatusF')||{}).value||'';
   const searchF=((document.getElementById('returnSearch')||{}).value||'').toLowerCase();
-  const sortF=(document.getElementById('returnSortF')||{}).value||'new';
-  let filtered=returns.filter(r=>{
+  const filtered=returns.filter(r=>{
     const matchStatus=!statusF||r.status===statusF;
     const matchSearch=!searchF||(r.phone||'').includes(searchF)||(r.shortId||'').toLowerCase().includes(searchF)||(r.reason||'').toLowerCase().includes(searchF);
     return matchStatus&&matchSearch;
-  });
-  filtered = filtered.slice().sort((a,b)=>{
-    const ta = new Date(a.createdAt||0).getTime();
-    const tb = new Date(b.createdAt||0).getTime();
-    return sortF==='old' ? ta-tb : tb-ta;
   });
   const tb=document.getElementById('returnsTbody');
   if(!tb)return;
@@ -2901,14 +2791,8 @@ async function updateReturnStatus(id, status){
 async function renderMsgs(){
   await loadMsgs();
   const c=document.getElementById('msgsList');
-  const sortF=document.getElementById('msgSortF')?.value||'new';
-  let list = msgs.slice().sort((a,b)=>{
-    const ta = a.createdAt?.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-    const tb2 = b.createdAt?.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-    return sortF==='old' ? ta-tb2 : tb2-ta;
-  });
-  if(!list.length){c.innerHTML='<div class="empty-s"><i class="fas fa-envelope-open"></i><p>No messages yet</p></div>';return;}
-  c.innerHTML=list.map(m=>{
+  if(!msgs.length){c.innerHTML='<div class="empty-s"><i class="fas fa-envelope-open"></i><p>No messages yet</p></div>';return;}
+  c.innerHTML=msgs.map(m=>{
     const date=m.createdAt?.seconds?new Date(m.createdAt.seconds*1000).toLocaleString('fr-DZ'):'—';
     return `<div class="msg-card ${!m.read?'unread':''}" id="msg-${m.id}">
       <div class="msg-head">
@@ -3641,11 +3525,17 @@ const _NOTIF = (() => {
 
   let _seen=new Set(), _ws=null, _hb=null, _retry=null, _started=false, _ref=1;
 
+  // Collections that must NEVER trigger a notification (catalog / settings writes)
+  const _SILENT_COLS = new Set(['products','categories','deliveryTariffs','settings','offers']);
+
   function seedIds(){
     (typeof orders!=='undefined'?orders:[]).forEach(o=>_seen.add(o.id));
     (typeof msgs!=='undefined'?msgs:[]).forEach(m=>_seen.add(m.id));
     (typeof exchs!=='undefined'?exchs:[]).forEach(e=>_seen.add(e.id));
     (typeof returns!=='undefined'?returns:[]).forEach(r=>_seen.add(r.id));
+    // Seed catalog IDs so bulk product imports never trip the notifier
+    (typeof prods!=='undefined'?prods:[]).forEach(p=>_seen.add(p.id));
+    (typeof cats!=='undefined'?cats:[]).forEach(c=>_seen.add(c.id));
   }
 
 
@@ -3699,15 +3589,16 @@ function playDing() {
   }
 
   function handleInsert(payload){
-    console.log('[INSERT]', JSON.stringify(payload).slice(0,300));
     const rec_id = payload?.record?.rec_id;
     const col    = payload?.record?.collection;
     const data   = payload?.record?.data || {};
-    if(!rec_id||!col){ console.warn('[INSERT] missing rec_id or col', rec_id, col); return; }
+    if(!rec_id||!col) return;
+    // Hard-ignore catalog/settings collections — product imports must never fire a notification
+    if(_SILENT_COLS.has(col)) return;
     if(_seen.has(rec_id)) return;
     _seen.add(rec_id);
     const cfg = WATCH[col];
-    if(!cfg){ console.warn('[INSERT] no WATCH config for collection:', col); return; }
+    if(!cfg) return;
     notify(cfg, {id:rec_id, ...data});
     if(col==='orders')           loadOrders().then(()=>renderDashboard());
     if(col==='messages')         loadMsgs().then(()=>renderDashboard());
@@ -3718,9 +3609,17 @@ function playDing() {
   function send(obj){ if(_ws&&_ws.readyState===1) _ws.send(JSON.stringify({...obj,ref:String(_ref++)})); }
 
   function subscribe(){
+    // Filter at the Supabase level — only the 4 collections we actually notify on.
+    // Product/category inserts never reach the client, so bulk imports are completely silent.
+    const watchCols = ['orders','messages','exchangeRequests','returnRequests'];
     send({
       topic:'realtime:public:store', event:'phx_join',
-      payload:{ config:{ broadcast:{self:false}, presence:{key:''}, postgres_changes:[{event:'INSERT',schema:'public',table:'store'}] } }
+      payload:{ config:{ broadcast:{self:false}, presence:{key:''},
+        postgres_changes: watchCols.map(col=>({
+          event:'INSERT', schema:'public', table:'store',
+          filter:'collection=eq.'+col
+        }))
+      }}
     });
   }
 
@@ -3847,7 +3746,7 @@ async function testNotification(){
 function updateTestBtn(){
   const btn = document.getElementById('testNotifBtn');
   if(!btn) return;
-  btn.style.display = 'none'; // Test button removed from UI
+  btn.style.display = (Notification.permission==='granted') ? '' : 'none';
 }
 
 async function requestNotifPermission(){
@@ -3881,13 +3780,11 @@ async function requestNotifPermission(){
 // ============================================
 async function runDangerDelete() {
   const checks = [
-    { id: 'dz-products',   col: 'products',          label: 'Products' },
-    { id: 'dz-categories', col: 'categories',         label: 'Categories' },
-    { id: 'dz-orders',     col: 'orders',             label: 'Orders' },
-    { id: 'dz-offers',     col: 'offers',             label: 'Best Offers' },
-    { id: 'dz-messages',   col: 'messages',           label: 'Messages' },
-    { id: 'dz-exchange',   col: 'exchangeRequests',   label: 'Sell/Exchange Requests' },
-    { id: 'dz-returns',    col: 'returnRequests',     label: 'Return Requests' },
+    { id: 'dz-products',   col: 'products',   label: 'Products' },
+    { id: 'dz-categories', col: 'categories', label: 'Categories' },
+    { id: 'dz-orders',     col: 'orders',     label: 'Orders' },
+    { id: 'dz-offers',     col: 'offers',     label: 'Best Offers' },
+    { id: 'dz-messages',   col: 'messages',   label: 'Messages' },
   ];
   const selected = checks.filter(c => document.getElementById(c.id)?.checked);
   if (!selected.length) { alert('Please select at least one item to delete.'); return; }
