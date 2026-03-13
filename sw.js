@@ -1,7 +1,7 @@
-const CACHE_NAME   = 'rmzstore-v9';
-const OFFLINE_PAGE = '/admin.html';
+const CACHE_NAME   = 'rmzstore-v10';
+const OFFLINE_PAGE = '/admin-dashboard';
 
-const PRECACHE_URLS = ['/admin.html','/manifest.json','/icons/icon-192.png','/icons/icon-512.png'];
+const PRECACHE_URLS = ['/admin-dashboard','/admin.html','/manifest.json','/icons/icon-192.png','/icons/icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -41,7 +41,7 @@ self.addEventListener('push', event => {
     self.registration.showNotification(d.title || 'RMZSTORE', {
       body: d.body || 'You have a new update.',
       icon: '/icons/icon-192.png', badge: '/icons/icon-96.png',
-      vibrate: [200,100,200], data: { url: d.url || '/admin.html' }
+      vibrate: [200,100,200], data: { url: d.url || '/admin-dashboard' }
     })
   );
 });
@@ -51,7 +51,7 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil(
     clients.matchAll({ type:'window', includeUncontrolled:true }).then(list => {
       for (const c of list) { if (c.url.includes('admin') && 'focus' in c) return c.focus(); }
-      return clients.openWindow(event.notification.data.url);
+      return clients.openWindow(event.notification.data.url || '/admin-dashboard');
     })
   );
 });

@@ -2,8 +2,8 @@
   "name": "RMZSTORE Admin Dashboard",
   "short_name": "RMZSTORE",
   "description": "RMZSTORE Admin Panel — Manage orders, products, and dispatch",
-  "start_url": "/admin",
-  "scope": "/admin",
+  "start_url": "/admin-dashboard",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0B0B0B",
@@ -93,14 +93,14 @@
       "name": "Orders",
       "short_name": "Orders",
       "description": "View and manage orders",
-      "url": "/admin.html#orders",
+      "url": "/admin-dashboard#orders",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
     {
       "name": "Products",
       "short_name": "Products",
       "description": "Manage products",
-      "url": "/admin.html#products",
+      "url": "/admin-dashboard#products",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     }
   ]
