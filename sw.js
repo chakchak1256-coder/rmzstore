@@ -1,4 +1,4 @@
-const CACHE_NAME   = 'rmzstore-v10';
+const CACHE_NAME   = 'rmzstore-v11';
 const OFFLINE_PAGE = '/admin-dashboard';
 
 const PRECACHE_URLS = ['/admin-dashboard','/admin.html','/manifest.json','/icons/icon-192.png','/icons/icon-512.png'];
