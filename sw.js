@@ -36,18 +36,12 @@ self.addEventListener('fetch', event => {
 
 self.addEventListener('push', event => {
   if (!event.data) return;
-  let d = {};
-  try { d = event.data.json(); } catch(e) { d = { title: 'RMZSTORE', body: event.data.text() }; }
+  const d = event.data.json();
   event.waitUntil(
-    self.registration.showNotification(d.title || '🛒 New Order!', {
-      body:    d.body    || 'You have a new update.',
-      icon:    '/icons/icon-192.png',
-      badge:   '/icons/icon-96.png',
-      vibrate: [300, 100, 300, 100, 300],
-      tag:     'rmzstore-order',
-      renotify: true,
-      requireInteraction: true,
-      data: { url: d.url || '/admin.html#orders' }
+    self.registration.showNotification(d.title || 'RMZSTORE', {
+      body: d.body || 'You have a new update.',
+      icon: '/icons/icon-192.png', badge: '/icons/icon-96.png',
+      vibrate: [200,100,200], data: { url: d.url || '/admin.html' }
     })
   );
 });

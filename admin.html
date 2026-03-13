@@ -3532,8 +3532,38 @@ const _NOTIF = (() => {
     (typeof returns!=='undefined'?returns:[]).forEach(r=>_seen.add(r.id));
   }
 
+
+// ── Notification ding sound (Web Audio API — no file needed) ─────────────
+function playDing() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+
+    const osc1 = ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(1318, ctx.currentTime);      // E6
+    osc1.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+    osc1.connect(gain);
+    osc1.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 1.2);
+
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1760, ctx.currentTime + 0.12); // A6
+    osc2.frequency.exponentialRampToValueAtTime(1318, ctx.currentTime + 0.35);
+    osc2.connect(gain);
+    osc2.start(ctx.currentTime + 0.12);
+    osc2.stop(ctx.currentTime + 1.2);
+  } catch(e) { /* audio not available */ }
+}
+
   function notify(cfg, record){
     const body = cfg.body(record);
+    playDing();
     toast('s', cfg.icon + ' <strong>' + cfg.title + '</strong> ' + body.slice(0,60));
     if('Notification' in window && Notification.permission==='granted'){
       try {

@@ -796,13 +796,14 @@ footer{background:var(--bg-secondary);border-top:1px solid var(--border2);paddin
 .back-btn{display:inline-flex;align-items:center;gap:8px;color:var(--text-secondary);font-family:'Exo 2',sans-serif;font-weight:600;font-size:14px;margin-bottom:32px;cursor:pointer;transition:color 0.2s;padding:10px 16px;border-radius:10px;border:1px solid var(--border2);background:var(--bg-card)}
 .back-btn:hover{color:var(--accent);border-color:var(--border)}
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start}
-.gallery-main{width:100%;height:420px;border-radius:20px;background:var(--bg-card);border:1px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative}
-.gallery-main img{width:100%;height:100%;object-fit:cover}
+.gallery-main{width:100%;height:420px;border-radius:20px;background:var(--bg-card);border:1px solid var(--border2);overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;cursor:zoom-in}
+.gallery-main img{width:100%;height:100%;object-fit:contain;padding:12px;transition:transform 0.2s}
+.gallery-main:hover img{transform:scale(1.03)}
 .gallery-main-placeholder{font-size:100px;color:var(--text-muted)}
 .gallery-thumbs{display:flex;gap:10px;margin-top:14px;overflow-x:auto;padding-bottom:4px}
 .gallery-thumb{width:80px;height:80px;border-radius:10px;overflow:hidden;border:2px solid var(--border2);cursor:pointer;transition:var(--transition);flex-shrink:0;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--text-muted)}
 .gallery-thumb.active,.gallery-thumb:hover{border-color:var(--accent)}
-.gallery-thumb img{width:100%;height:100%;object-fit:cover}
+.gallery-thumb img{width:100%;height:100%;object-fit:contain;padding:4px}
 .detail-info{padding-top:8px}
 .detail-category{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
 .detail-name{font-family:'Exo 2',sans-serif;font-size:32px;font-weight:900;line-height:1.2;margin-bottom:20px}
@@ -959,6 +960,21 @@ footer{background:var(--bg-secondary);border-top:1px solid var(--border2);paddin
   .section-title{font-size:26px}
   .condition-select-group{grid-template-columns:1fr 1fr}
 }
+
+/* ── Lightbox ─────────────────────────────────────────────── */
+.lightbox-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s}
+.lightbox-overlay.open{opacity:1;pointer-events:all}
+.lightbox-img{max-width:92vw;max-height:88vh;object-fit:contain;border-radius:12px;transform:scale(0.92);transition:transform 0.25s}
+.lightbox-overlay.open .lightbox-img{transform:scale(1)}
+.lightbox-close{position:absolute;top:20px;right:24px;font-size:32px;color:#fff;cursor:pointer;line-height:1;opacity:0.7;transition:opacity 0.2s;background:none;border:none}
+.lightbox-close:hover{opacity:1}
+.lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);font-size:28px;color:#fff;cursor:pointer;background:rgba(255,255,255,0.1);border:none;border-radius:50%;width:48px;height:48px;display:flex;align-items:center;justify-content:center;opacity:0.7;transition:all 0.2s}
+.lightbox-nav:hover{opacity:1;background:rgba(255,255,255,0.2)}
+.lightbox-prev{left:16px}
+.lightbox-next{right:16px}
+.lightbox-dots{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.lightbox-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.35);cursor:pointer;transition:background 0.2s}
+.lightbox-dot.active{background:#fff}
 </style>
 </head>
 <body>
@@ -2048,6 +2064,58 @@ async function _compressForExchange(file) {
     img.src = url;
   });
 }
+
+// ── Lightbox ──────────────────────────────────────────────────────────────
+let _lbImages = [];
+let _lbIndex  = 0;
+
+function openLightbox(startIndex) {
+  const mainImg = document.getElementById('galleryMainImg');
+  if (!mainImg) return;
+  // Collect all resolved thumb srcs + main
+  const thumbs = [...document.querySelectorAll('.gallery-thumb img')];
+  _lbImages = thumbs.length ? thumbs.map(t => t.src) : [mainImg.src];
+  // Find current active index
+  const activeThumb = document.querySelector('.gallery-thumb.active img');
+  _lbIndex = startIndex !== undefined ? startIndex :
+    (activeThumb ? thumbs.indexOf(activeThumb) : 0);
+  if (_lbIndex < 0) _lbIndex = 0;
+  _lbRender();
+  document.getElementById('lightboxOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox(e) {
+  if (e && e.target !== document.getElementById('lightboxOverlay') && e.type === 'click') {
+    if (!e.target.classList.contains('lightbox-overlay')) return;
+  }
+  document.getElementById('lightboxOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function lightboxNav(dir) {
+  _lbIndex = (_lbIndex + dir + _lbImages.length) % _lbImages.length;
+  _lbRender();
+}
+
+function _lbRender() {
+  document.getElementById('lightboxImg').src = _lbImages[_lbIndex];
+  const dots = document.getElementById('lightboxDots');
+  if (_lbImages.length > 1) {
+    dots.innerHTML = _lbImages.map((_, i) =>
+      `<div class="lightbox-dot ${i===_lbIndex?'active':''}" onclick="(_lbIndex=${i},_lbRender(),event.stopPropagation())"></div>`
+    ).join('');
+  } else { dots.innerHTML = ''; }
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightboxOverlay').classList.contains('open')) return;
+  if (e.key === 'ArrowRight') lightboxNav(1);
+  if (e.key === 'ArrowLeft')  lightboxNav(-1);
+  if (e.key === 'Escape')     closeLightbox();
+});
+
 </script>
 
 <!-- ==========================================
@@ -2618,7 +2686,7 @@ async function openProduct(id) {
 
   content.innerHTML = `
     <div>
-      <div class="gallery-main" id="galleryMain">
+      <div class="gallery-main" id="galleryMain" onclick="openLightbox()">
         ${images.length ? `<img src="" data-imgref="${images[0]}" id="galleryMainImg" alt="${product.name}"/>` : '<div class="gallery-main-placeholder">📱</div>'}
       </div>
       ${images.length > 1 ? `
@@ -3607,5 +3675,15 @@ renderCart();
 renderTariffsTable();
 
 </script>
+
+<!-- Lightbox -->
+<div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1);event.stopPropagation()">‹</button>
+  <img class="lightbox-img" id="lightboxImg" src="" alt=""/>
+  <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1);event.stopPropagation()">›</button>
+  <div class="lightbox-dots" id="lightboxDots"></div>
+</div>
+
 </body>
 </html>
