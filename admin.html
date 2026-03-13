@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=0.85, minimum-scale=0.5, maximum-scale=3.0, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>RMZSTORE — Admin Dashboard</title>
 
 <!-- ═══════════════════════════════════════════
@@ -257,6 +257,7 @@ tr:hover td{background:rgba(212,175,55,0.03)}
 .b-accepted{background:rgba(46,125,50,0.1);color:var(--success);border:1px solid rgba(46,125,50,0.2)}
 .b-rejected{background:rgba(214,40,40,0.1);color:var(--accent2);border:1px solid rgba(214,40,40,0.2)}
 .b-return{background:rgba(180,0,255,0.1);color:#b400ff;border:1px solid rgba(180,0,255,0.2)}
+.b-fake{background:rgba(255,60,0,0.1);color:#ff3c00;border:1px solid rgba(255,60,0,0.25)}
 .b-instock{background:rgba(46,125,50,0.1);color:var(--success);border:1px solid rgba(46,125,50,0.2)}
 .b-oos{background:rgba(214,40,40,0.1);color:var(--accent2);border:1px solid rgba(214,40,40,0.2)}
 
@@ -680,6 +681,7 @@ select.fi option{background:var(--bg2)}
                   <option value="canceled_client">Canceled by Client</option>
                   <option value="canceled_owner">Canceled by Owner</option>
                   <option value="completed">Completed</option>
+                  <option value="fake_number">📵 Fake Number</option>
                 </select>
                 <div class="srch"><i class="fas fa-search"></i><input type="text" id="orderSearch" placeholder="Search..." oninput="filterOrders()"/></div>
                 <div class="export-btn-group" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -2432,7 +2434,7 @@ function renderOrders(){
         ${o._isLocal
           ? `<span style="font-size:11px;color:#E6C56A;font-family:'Exo 2',sans-serif">Not synced</span>`
           : `<select class="status-select" onchange="updateOrderStatus('${o.id}',this.value)">
-              ${['new','contacted','delayed','delivered','returned','canceled_client','canceled_owner','completed'].map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${statusLabel(s)}</option>`).join('')}
+              ${['new','contacted','delayed','delivered','returned','canceled_client','canceled_owner','completed','fake_number'].map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${statusLabel(s)}</option>`).join('')}
              </select>`}
       </td>
       <td style="font-size:12px;color:var(--text2)">${date}</td>
@@ -2449,7 +2451,7 @@ function renderOrders(){
     const statusSel = o._isLocal
       ? `<span style="font-size:11px;color:#E6C56A;font-family:'Exo 2',sans-serif">Not synced</span>`
       : `<select class="status-select" style="width:100%" onchange="updateOrderStatus('${o.id}',this.value)">
-          ${['new','contacted','delayed','delivered','returned','canceled_client','canceled_owner','completed'].map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${statusLabel(s)}</option>`).join('')}
+          ${['new','contacted','delayed','delivered','returned','canceled_client','canceled_owner','completed','fake_number'].map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${statusLabel(s)}</option>`).join('')}
          </select>`;
     return `<div class="order-card${o._isLocal?' local-order':''}">
       <div class="oc-top">
@@ -2990,7 +2992,7 @@ function statusLabel(s){
   const map={
     new:'New', contacted:'Contacted', delayed:'Delayed', delivered:'Delivered',
     returned:'Returned', canceled_client:'Canceled by Client', canceled_owner:'Canceled by Owner',
-    completed:'Completed',
+    completed:'Completed', fake_number:'Fake Number',
     // legacy
     pending:'Pending', confirmed:'Confirmed', processing:'Processing', shipped:'Shipped', cancelled:'Cancelled'
   };
@@ -3000,7 +3002,7 @@ function statusBadge(s){
   const colorMap={
     new:'b-confirmed', contacted:'b-processing', delayed:'b-pending',
     delivered:'b-delivered', returned:'b-cancelled', canceled_client:'b-cancelled',
-    canceled_owner:'b-cancelled', completed:'b-delivered',
+    canceled_owner:'b-cancelled', completed:'b-delivered', fake_number:'b-fake',
     // legacy support
     pending:'b-pending', confirmed:'b-confirmed', processing:'b-processing',
     shipped:'b-shipped', delivered:'b-delivered', cancelled:'b-cancelled'
@@ -3437,10 +3439,22 @@ function validateOrderData(o) {
 <script>
 // Register Service Worker
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('[SW] Registered, scope:', reg.scope))
-      .catch(err => console.warn('[SW] Registration failed:', err));
+  window.addEventListener('load', async () => {
+    try {
+      // Unregister any stale SW that has a scope other than '/'
+      // (old installs under /admin scope won't cover /admin-dashboard)
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) {
+        if (r.scope && !r.scope.endsWith('/')) {
+          await r.unregister();
+          console.log('[SW] Unregistered stale SW with scope:', r.scope);
+        }
+      }
+      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      console.log('[SW] Registered, scope:', reg.scope);
+    } catch(err) {
+      console.warn('[SW] Registration failed:', err);
+    }
   });
 }
 
@@ -3525,11 +3539,15 @@ const _NOTIF = (() => {
 
   let _seen=new Set(), _ws=null, _hb=null, _retry=null, _started=false, _ref=1;
 
+  const _SILENT_COLS = new Set(['products','categories','deliveryTariffs','settings','offers']);
+
   function seedIds(){
     (typeof orders!=='undefined'?orders:[]).forEach(o=>_seen.add(o.id));
     (typeof msgs!=='undefined'?msgs:[]).forEach(m=>_seen.add(m.id));
     (typeof exchs!=='undefined'?exchs:[]).forEach(e=>_seen.add(e.id));
     (typeof returns!=='undefined'?returns:[]).forEach(r=>_seen.add(r.id));
+    (typeof prods!=='undefined'?prods:[]).forEach(p=>_seen.add(p.id));
+    (typeof cats!=='undefined'?cats:[]).forEach(c=>_seen.add(c.id));
   }
 
 
@@ -3572,10 +3590,17 @@ function playDing() {
           tag: record.id, renotify:true, vibrate:[200,100,200],
           data:{ section: cfg.section }
         };
+        const title = cfg.icon + ' ' + cfg.title;
         if('serviceWorker' in navigator){
-          navigator.serviceWorker.ready.then(reg => reg.showNotification(cfg.icon + ' ' + cfg.title, opts));
+          // Use a race: if SW isn't ready within 2s, fall back to Notification API
+          const swPromise = navigator.serviceWorker.ready
+            .then(reg => reg.showNotification(title, opts));
+          const fallback = new Promise((_,rej) => setTimeout(rej, 2000, 'sw-timeout'));
+          Promise.race([swPromise, fallback]).catch(() => {
+            try { const n = new Notification(title, opts); n.onclick = ()=>{ window.focus(); showSec(cfg.section); n.close(); }; } catch(e){}
+          });
         } else {
-          const n = new Notification(cfg.icon + ' ' + cfg.title, opts);
+          const n = new Notification(title, opts);
           n.onclick = () => { window.focus(); showSec(cfg.section); n.close(); };
         }
       } catch(e){ console.warn('[NOTIF]', e); }
@@ -3583,15 +3608,15 @@ function playDing() {
   }
 
   function handleInsert(payload){
-    console.log('[INSERT]', JSON.stringify(payload).slice(0,300));
     const rec_id = payload?.record?.rec_id;
     const col    = payload?.record?.collection;
     const data   = payload?.record?.data || {};
-    if(!rec_id||!col){ console.warn('[INSERT] missing rec_id or col', rec_id, col); return; }
+    if(!rec_id||!col) return;
+    if(_SILENT_COLS.has(col)) return;
     if(_seen.has(rec_id)) return;
     _seen.add(rec_id);
     const cfg = WATCH[col];
-    if(!cfg){ console.warn('[INSERT] no WATCH config for collection:', col); return; }
+    if(!cfg) return;
     notify(cfg, {id:rec_id, ...data});
     if(col==='orders')           loadOrders().then(()=>renderDashboard());
     if(col==='messages')         loadMsgs().then(()=>renderDashboard());
@@ -3718,11 +3743,15 @@ async function testNotification(){
   if(Notification.permission!=='granted'){ toast('e','Grant notification permission first!'); return; }
   try {
     const opts = { body: 'If you see this, notifications are working!', icon: '/icons/icon-192.png' };
+    try { new Notification('🧪 Test Notification', opts); } catch(e){}
     if('serviceWorker' in navigator){
-      const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification('🧪 Test Notification', opts);
-    } else {
-      new Notification('🧪 Test Notification', opts);
+      try {
+        const reg = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((_,r)=>setTimeout(r,2000,'timeout'))
+        ]);
+        await reg.showNotification('🧪 Test Notification', opts);
+      } catch(e){}
     }
     toast('s', '✓ Test notification sent — did it pop up?');
   } catch(e) { toast('e', 'Error: ' + e.message); }
