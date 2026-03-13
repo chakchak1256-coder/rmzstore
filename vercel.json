@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/admin-dashboard", "destination": "/admin.html" }
   ],
   "headers": [
     {
@@ -22,4 +22,5 @@
       ]
     }
   ]
+
 }
