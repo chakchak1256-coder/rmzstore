@@ -3603,6 +3603,7 @@ const _NOTIF = (() => {
     seedIds();
     updateNotifBtn();
     updateTestBtn();
+    if('Notification' in window && Notification.permission==='granted') registerPushSubscription();
     if('Notification' in window && Notification.permission==='default'){
       Notification.requestPermission().then(p=>{
         updateNotifBtn();
@@ -3638,6 +3639,46 @@ function updateNotifBtn(){
   }
 }
 
+// ── Background Push Subscription ─────────────────────────────────────────
+const VAPID_PUBLIC_KEY = 'BGPxBcxjYxhZom-bAqF8lfm4T0IqzqNJDhb_sTEHnGmASac0GEUZ2WxBQokW3ZuClqpFwIHkdzb2goy_lLHIa0U';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw     = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function registerPushSubscription() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.warn('[PUSH] Not supported'); return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const SB_URL = 'https://ktsmmobntabchkvbfhpl.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0c21tb2JudGFiY2hrdmJmaHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzcxNTUsImV4cCI6MjA4ODg1MzE1NX0.y3q1E2rjzEOa7_v08tO-TVuB0RivFznGZ5Q9k_PP4_s';
+    const res = await fetch(SB_URL + '/rest/v1/push_subscriptions', {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ endpoint: sub.endpoint, subscription: sub.toJSON() })
+    });
+    console.log('[PUSH] Subscription saved ✓', res.status);
+  } catch(e) { console.warn('[PUSH] Subscribe failed:', e.message); }
+}
+
+
 async function testNotification(){
   if(Notification.permission!=='granted'){ toast('e','Grant notification permission first!'); return; }
   try {
@@ -3666,6 +3707,7 @@ async function requestNotifPermission(){
   updateTestBtn();
   if(p==='granted'){
     toast('s','🔔 Notifications enabled!');
+    registerPushSubscription();
     setTimeout(()=>{
       new Notification('🔔 RMZSTORE Notifications', {
         body:'You will now receive alerts for new orders, messages, and requests.',
